@@ -6,7 +6,7 @@ Ball-Tracking
 Description
 ----------
 In this part, I mainly detect the presence of a colored ball using computer vision techniques. 
-And then I track the ball as it moves around in the video frames, drawing its previous positions as it moves.
+And then I track the ball as it moves around in the video frames.
 
 If you want to run it on your PC. You can download it directly or use 
 `git clone` in git IDE. 

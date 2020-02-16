@@ -10,12 +10,12 @@ from PIL import Image, ImageTk  # Python Imaging Library
 
 vs = cv2.VideoCapture('ball_tracking_example.mp4')
 # time.sleep(1.0)
+
 getPixelColor = False  # flag to get the pixel color of the ball when needed
 camHeight = 480
 camWidth = 640
 H, S, V = 0, 0, 0  # the color properties of the Pixel to track
 mouseX, mouseY = 0, 0  # declare variables to capture mouse position for color tracking
-
 
 controllerWindow = tk.Tk()  # initializes this tk interpreter and creates the root window
 controllerWindow.title("2DOF Ball-Plate Control Window ")  # define title of the root window
@@ -49,14 +49,13 @@ sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
 
-def showGraphWindow():
-    print('show graph windwo.')
 
-def showCameraFrameWindow():
-    print('show camera frame window.')
+# def showCameraFrameWindow():
+#     print('show camera frame window.')
 
 def showCalqueCalibration():
     print('show calque calibration.')
+
 
 def setRefWithMouse(
         mousePosition):  # set refX and refY based on the mousePosition, mousePosition is the realtime position of the mouse not a saved variable
@@ -65,21 +64,65 @@ def setRefWithMouse(
         refreshGraph()
         refX, refY = mousePosition.x, mousePosition.y
 
+
+showVideoWindow = False
+
+
+def showCameraFrameWindow():  # function to toggle the showVideoWindow and change the label text of the button
+    global showVideoWindow, showGraph
+    global BShowVideoTxt
+    if showVideoWindow == False:
+        # if showGraph == True:
+        #    graphWindow.withdraw()
+        #    showGraph = False
+        #    BShowGraph["text"] = "Show Plot"
+        videoWindow.deiconify()
+        showVideoWindow = True
+        BShowVideo["text"] = "Hide Live CAM feed"
+    else:
+        videoWindow.withdraw()
+        showVideoWindow = False
+        BShowVideo["text"] = "Show Live CAM feed"
+
+
+showGraph = False  # bool for Graph window
+
+
+def showGraphWindow():  # function that toggles the Graph window and update the show graph button
+    global showGraph, showVideoWindow
+    global BShowGraph
+
+    if showGraph == False:
+        # if showVideoWindow == True:
+        #    videoWindow.withdraw()
+        #    showVideoWindow = False
+        #    BShowVideo["text"] = "Show Live CAM feed"
+        showGraph = True
+        BShowGraph["text"] = "Hide Plot"
+    else:
+        showGraph = False
+        BShowGraph["text"] = "Show Plot"
+
+
 def PIDcontrol():
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
     # print(Kp,Ki,Kd)
 
+
 def refreshGraph():  # function that reset the time variable to 480 if the graph is full
     global t
     t = 480
+
 
 def endProgam():  # function to close root window
     controllerWindow.destroy()
 
 
 start_time = 0
+
+
 def main():
     global H, S, V
     global getPixelColor
@@ -88,7 +131,6 @@ def main():
     global timeInterval, start_time
 
     start_time = time.time()
-
 
     _, frame = vs.read()
     frame = imutils.resize(frame, width=600)
@@ -116,20 +158,25 @@ def main():
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         # print((x,y),radius)
         if radius > 10:
+            cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
             PIDcontrol()
 
     # cv2.imshow('mask_before', mask_before)
     # cv2.imshow('frame', frame)
-    showVideoWindow = False
+    print('line170')
     if showVideoWindow == True:
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = Image.fromarray(frame)
-        imgtk = ImageTk.PhotoImage(image=frame)
-        lmain.imgtk = imgtk
-        lmain.configure(image=imgtk)
+        print('line172')
+        cv2.imshow('frame', frame)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # frame = Image.fromarray(frame)
+        # imgtk = ImageTk.PhotoImage(image=frame)
+        # lmain.imgtk = imgtk
+        # lmain.configure(image=imgtk)
     lmain.after(5, main)
+
 
 '''
 可以控制并改变HSV的上下值范围。
@@ -150,29 +197,29 @@ BShowVideo.place(x=100, y=-5)
 BPositionCalibration = tk.Button(FrameVideoControl, text="Toggle Calibration View", command=showCalqueCalibration)
 BPositionCalibration.place(x=230, y=-5)
 
-sliderUH = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility upper H", length=350,
-                   tickinterval=10)
+sliderUH = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="upper H", length=350,
+                    tickinterval=10)
 sliderUH.set(sliderHDefault)
 sliderUH.pack()
-sliderUS = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility upper S", length=350,
-                   tickinterval=10)
+sliderUS = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="upper S", length=350,
+                    tickinterval=10)
 sliderUS.set(sliderSDefault)
 sliderUS.pack()
-sliderUV = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility upper V", length=350,
-                   tickinterval=10)
+sliderUV = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="upper V", length=350,
+                    tickinterval=10)
 sliderUV.set(sliderVDefault)
 sliderUV.pack()
 
-sliderLH = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility lower H", length=350,
-                   tickinterval=10)
+sliderLH = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="lower H", length=350,
+                    tickinterval=10)
 sliderLH.set(sliderHDefault)
 sliderLH.pack()
-sliderLS = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility lower S", length=350,
-                   tickinterval=10)
+sliderLS = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="lower S", length=350,
+                    tickinterval=10)
 sliderLS.set(sliderSDefault)
 sliderLS.pack()
-sliderLV = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="Sensibility lower V", length=350,
-                   tickinterval=10)
+sliderLV = tk.Scale(FrameVideoControl, from_=-50, to=50, orient="horizontal", label="lower V", length=350,
+                    tickinterval=10)
 sliderLV.set(sliderVDefault)
 sliderLV.pack()
 '''
@@ -241,10 +288,6 @@ BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", c
 BballDrawCircle.place(x=70, y=-5)
 BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=showCalqueCalibration)
 BballDrawEight.place(x=220, y=-5)
-
-
-
-
 
 main()
 tk.mainloop()

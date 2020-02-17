@@ -17,19 +17,20 @@ camWidth = 640
 H, S, V = 0, 0, 0  # the color properties of the Pixel to track
 mouseX, mouseY = 0, 0  # declare variables to capture mouse position for color tracking
 
+# 展示了系统控制面板
 controllerWindow = tk.Tk()  # initializes this tk interpreter and creates the root window
 controllerWindow.title("2DOF Ball-Plate Control Window ")  # define title of the root window
 controllerWindow.geometry("1200x800")  # define size of the root window
 controllerWindow["bg"] = "lightgrey"  # define the background color of the root window
 controllerWindow.resizable(0, 0)  # define if the root window is resizable or not for Vertical and horizontal，不可以拉伸
-
+# 展示了实时画面的控制面板
 videoWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "controllerwindow"
 videoWindow.title("Cam Footage")  # define title of videowindow
 videoWindow.resizable(0, 0)  # Cannot resize the window
 lmain = tk.Label(videoWindow)  # create an empty label widget in the videoWindow
 lmain.pack()  # adjust the size of the videowindow to fit the label lmain
 videoWindow.withdraw()  # hide the window
-
+# 展示PID控制下输入输出的跟踪情况
 graphWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "graphwindow"
 graphWindow.title("Position in function of time")  # define window title
 graphWindow.resizable(0, 0)  # define if resizable or not
@@ -37,7 +38,7 @@ graphCanvas = tk.Canvas(graphWindow, width=500 + 200, height=camHeight)  # creat
 graphCanvas.pack()  # pack the canvas widget
 graphWindow.withdraw()  # hide the graphwindow
 
-# Defining all the slider default values
+# 声明一些滑条将用到的变量
 sliderHDefault = 0
 sliderSDefault = 0
 sliderVDefault = 0
@@ -49,25 +50,30 @@ sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
 
-
-# def showCameraFrameWindow():
-#     print('show camera frame window.')
-
+# 验证小球运动的轨道
+showCalqueCalibrationBool = False
 def showCalqueCalibration():
-    print('show calque calibration.')
+    global showCalqueCalibrationBool
+    showCalqueCalibrationBool = not showCalqueCalibrationBool
 
+# 取色笔，可以获得像素点的HSV的值
+def getMouseClickPosition(mousePosition):  # get mouse click position
+    global mouseX, mouseY
+    global getPixelColor
+    mouseX, mouseY = mousePosition.x, mousePosition.y
+    getPixelColor = True
 
-def setRefWithMouse(
-        mousePosition):  # set refX and refY based on the mousePosition, mousePosition is the realtime position of the mouse not a saved variable
+# 用鼠标设定小球的运动位置，为其设定参考点
+refY = 240  # reference refinate Y
+refX = 240  # reference refinate X
+def setRefWithMouse(mousePosition):
     global refX, refY
     if mousePosition.y > 10:
         refreshGraph()
         refX, refY = mousePosition.x, mousePosition.y
 
-
+# 左上角，实时视频窗口，控制是不是要显示
 showVideoWindow = False
-
-
 def showCameraFrameWindow():  # function to toggle the showVideoWindow and change the label text of the button
     global showVideoWindow, showGraph
     global BShowVideoTxt
@@ -84,10 +90,8 @@ def showCameraFrameWindow():  # function to toggle the showVideoWindow and chang
         showVideoWindow = False
         BShowVideo["text"] = "Show Live CAM feed"
 
-
+# 控制是否显示建模图。建模图显示了给定与输入输出之间的实时关系。
 showGraph = False  # bool for Graph window
-
-
 def showGraphWindow():  # function that toggles the Graph window and update the show graph button
     global showGraph, showVideoWindow
     global BShowGraph
@@ -103,26 +107,27 @@ def showGraphWindow():  # function that toggles the Graph window and update the 
         showGraph = False
         BShowGraph["text"] = "Show Plot"
 
+def refreshGraph():  # function that reset the time variable to 480 if the graph is full
+    global t
+    t = 480
 
+# PID控制程序
 def PIDcontrol():
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
     # print(Kp,Ki,Kd)
 
-
-def refreshGraph():  # function that reset the time variable to 480 if the graph is full
-    global t
-    t = 480
-
-
-def endProgam():  # function to close root window
+# 退出interface
+def endProgam():
     controllerWindow.destroy()
+
+ # function that does nothing, may be used for delay
+def donothing():
+    pass
 
 
 start_time = 0
-
-
 def main():
     global H, S, V
     global getPixelColor
@@ -136,6 +141,17 @@ def main():
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+    # 相当于取色笔
+    if getPixelColor == True and mouseY > 0 and mouseY < 480 and mouseX < 480:
+        pixelColorOnClick = frame[mouseY, mouseX]
+        pixelColorOnClick = np.uint8([[pixelColorOnClick]])
+        pixelColorOnClick = cv2.cvtColor(pixelColorOnClick, cv2.COLOR_BGR2HSV)
+        H = pixelColorOnClick[0, 0, 0]
+        S = pixelColorOnClick[0, 0, 1]
+        V = pixelColorOnClick[0, 0, 2]
+        print(mouseX, mouseY)
+        print(H, S, V)
+        getPixelColor = False
 
     greenLower = (29, 86, 6)
     greenUpper = (64, 255, 255)
@@ -150,6 +166,14 @@ def main():
     a = cnts
     cnts = imutils.grab_contours(cnts)
     center = None
+
+    cv2.circle(frame, (int(refX), int(refY)), int(4), (255, 0, 0), 2)
+    if showCalqueCalibrationBool == True:
+        cv2.circle(frame, (240, 240), 220, (255, 0, 0), 2)
+        cv2.circle(frame, (240, 240), 160, (255, 0, 0), 2)
+        cv2.line(frame, (240, 240), (240, 240 + 160), (255, 0, 0), 2)
+        cv2.line(frame, (240, 240), (240 + 138, 240 - 80), (255, 0, 0), 2)
+        cv2.line(frame, (240, 240), (240 - 138, 240 - 80), (255, 0, 0), 2)
 
     if len(cnts) > 0:
         c = max(cnts, key=cv2.contourArea)
@@ -166,15 +190,12 @@ def main():
 
     # cv2.imshow('mask_before', mask_before)
     # cv2.imshow('frame', frame)
-    print('line170')
     if showVideoWindow == True:
-        print('line172')
-        cv2.imshow('frame', frame)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # frame = Image.fromarray(frame)
-        # imgtk = ImageTk.PhotoImage(image=frame)
-        # lmain.imgtk = imgtk
-        # lmain.configure(image=imgtk)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #转换颜色从BGR到RGB
+        frame = Image.fromarray(frame) #将图像转换成Image对象
+        imgtk = ImageTk.PhotoImage(image=frame)
+        lmain.imgtk = imgtk
+        lmain.configure(image=imgtk)
     lmain.after(5, main)
 
 
@@ -288,6 +309,13 @@ BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", c
 BballDrawCircle.place(x=70, y=-5)
 BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=showCalqueCalibration)
 BballDrawEight.place(x=220, y=-5)
+
+# 获取鼠标的位置，转换成像素值。
+# https://www.cnblogs.com/progor/p/8505599.html
+videoWindow.protocol("WM_DELETE_WINDOW", donothing)
+videoWindow.bind("<Button-2>", getMouseClickPosition)
+videoWindow.bind("<Button-1>", setRefWithMouse)  # mouse click to set reference position
+
 
 main()
 tk.mainloop()

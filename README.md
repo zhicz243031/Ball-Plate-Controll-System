@@ -22,6 +22,20 @@ Prerequisites
 - opencv-python     4.1.2.30
 - numpy             1.16.5
 
+Interface
+---------
+![](https://github.com/505788057/Ball-Tracking/blob/master/MD_img/two.png)
+### Function introduction
+- HSV Parameter debugging
+    
+  For targeting different colored balls we need to set the different threshold.
+  
+- PID Parameter debugging & Graphic drawing
+- Ball control interface
+- System control interface
+
+
+
 Reference
 ---------
 1. [Pyimagesearch](https://www.pyimagesearch.com/)

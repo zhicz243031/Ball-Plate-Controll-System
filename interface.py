@@ -23,6 +23,14 @@ controllerWindow.title("2DOF Ball-Plate Control Window ")  # define title of the
 controllerWindow.geometry("1200x800")  # define size of the root window
 controllerWindow["bg"] = "lightgrey"  # define the background color of the root window
 controllerWindow.resizable(0, 0)  # define if the root window is resizable or not for Vertical and horizontal，不可以拉伸
+# 主控制面板背景图片
+canvas = tk.Canvas(controllerWindow, width=1200,height=800,bd=0, highlightthickness=0)
+imgpath = 'background.gif'
+img = Image.open(imgpath)
+photo = ImageTk.PhotoImage(img)
+
+canvas.create_image(500, 20, image=photo)
+canvas.pack()
 # 展示了实时画面的控制面板
 videoWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "controllerwindow"
 videoWindow.title("Cam Footage")  # define title of videowindow

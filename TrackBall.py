@@ -14,7 +14,7 @@ import time
 greenLower = (29, 86, 6)
 greenUpper = (64, 255, 255)
 
-vs = cv2.VideoCapture('ball_tracking_example.mp4')
+vs = cv2.VideoCapture('CBB.mp4')
 time.sleep(1.0)
 
 '''
@@ -47,7 +47,7 @@ while vs.isOpened():
     a = cnts
     cnts = imutils.grab_contours(cnts)
     center = None
-    print(cnts)
+    # print(cnts)
     if len(cnts) > 0:
         # find the largest contour in the mask, then use
         # it to compute the minimum enclosing circle and
@@ -63,9 +63,9 @@ while vs.isOpened():
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
-    cv2.imshow('mask_before', mask_before)
+    # cv2.imshow('mask_before', mask_before)
     cv2.imshow('frame', frame)
-    if cv2.waitKey(15) == ord('q'):
+    if cv2.waitKey(1) == ord('q'):
         break
 
 vs.release()

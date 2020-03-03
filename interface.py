@@ -8,7 +8,7 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 
-vs = cv2.VideoCapture('ball_tracking_example.mp4')
+vs = cv2.VideoCapture('FBS.mp4')
 # time.sleep(1.0)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
@@ -145,6 +145,10 @@ def main():
     start_time = time.time()
 
     _, frame = vs.read()
+    # width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+    # height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    # print(width,height)
+
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
@@ -156,15 +160,18 @@ def main():
         H = pixelColorOnClick[0, 0, 0]
         S = pixelColorOnClick[0, 0, 1]
         V = pixelColorOnClick[0, 0, 2]
-        print(mouseX, mouseY)
+        # print(mouseX, mouseY)
         print(H, S, V)
         getPixelColor = False
 
-    greenLower = (29, 86, 6)
-    greenUpper = (64, 255, 255)
-    # greenLower = (29 - sliderLH.get(), 86 - sliderLS.get(), 6 - sliderLV.get())
-    # greenUpper = (64 + sliderUH.get(), 255 + sliderUS.get() , 255 + sliderUV.get())
-
+    # greenLower = (29, 86, 6)
+    # greenUpper = (64, 255, 255)
+    # print(sliderLH.get())
+    greenLower = (29 - sliderLH.get(), 86 - sliderLS.get(), 6 - sliderLV.get())
+    greenUpper = (120 + sliderUH.get(), 255 + sliderUS.get() , 150 + sliderUV.get())
+    # print(greenUpper)
+    # greenLower = (29, 86, 6)
+    # greenUpper = (104, 255, 145)
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
     mask_erode = cv2.erode(mask_before, None, iterations=2)
     mask = cv2.dilate(mask_erode, None, iterations=2)
@@ -203,7 +210,15 @@ def main():
         imgtk = ImageTk.PhotoImage(image=frame)
         lmain.imgtk = imgtk
         lmain.configure(image=imgtk)
+    # timeInterval = time.time() - start_time
+    # fps = int(1/timeInterval)
+    # a = 0
+    # a = a + 1
+    # avefps = 0
+    # avefps = (avefps + fps)/a
+    # print(avefps)
     lmain.after(5, main)
+
 
 
 '''
@@ -320,7 +335,7 @@ BballDrawEight.place(x=220, y=-5)
 # 获取鼠标的位置，转换成像素值。
 # https://www.cnblogs.com/progor/p/8505599.html
 videoWindow.protocol("WM_DELETE_WINDOW", donothing)
-videoWindow.bind("<Button-2>", getMouseClickPosition)
+videoWindow.bind("<Button-3>", getMouseClickPosition)
 videoWindow.bind("<Button-1>", setRefWithMouse)  # mouse click to set reference position
 
 

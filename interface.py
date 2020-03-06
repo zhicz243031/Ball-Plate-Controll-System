@@ -8,7 +8,7 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 
-vs = cv2.VideoCapture('FBS.mp4')
+vs = cv2.VideoCapture('VideoRecord7.avi')
 # time.sleep(1.0)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
@@ -148,7 +148,7 @@ def main():
     # width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
     # height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
     # print(width,height)
-
+    time.sleep(0.015)
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
@@ -168,7 +168,7 @@ def main():
     # greenUpper = (64, 255, 255)
     # print(sliderLH.get())
     greenLower = (29 - sliderLH.get(), 86 - sliderLS.get(), 6 - sliderLV.get())
-    greenUpper = (120 + sliderUH.get(), 255 + sliderUS.get() , 150 + sliderUV.get())
+    greenUpper = (120 + sliderUH.get(), 255 + sliderUS.get() , 200 + sliderUV.get())
     # print(greenUpper)
     # greenLower = (29, 86, 6)
     # greenUpper = (104, 255, 145)

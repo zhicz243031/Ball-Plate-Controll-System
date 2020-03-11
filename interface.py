@@ -8,7 +8,8 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 
-vs = cv2.VideoCapture('VideoRecord7.avi')
+
+vs = cv2.VideoCapture('BlueBal.avi')
 # time.sleep(1.0)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
@@ -194,7 +195,7 @@ def main():
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-        # print((x,y),radius)
+        print((x,y),radius)
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)

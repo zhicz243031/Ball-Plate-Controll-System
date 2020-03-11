@@ -4,6 +4,8 @@ import argparse  # 是python的一个命令行解析包，用于编写可读性�
 import cv2
 import imutils  # a python package is used as image processing.
 import time
+import kalman_new
+# import kalman
 
 '''
 1. define the lower and upper boundaries of the "green" ball in the HSV color space
@@ -12,9 +14,9 @@ import time
 4. vs means video source.
 '''
 greenLower = (29, 86, 6)
-greenUpper = (64, 255, 255)
+greenUpper = (120, 255, 200)
 
-vs = cv2.VideoCapture('CBB.mp4')
+vs = cv2.VideoCapture('BlueBal.avi')
 time.sleep(1.0)
 
 '''
@@ -34,6 +36,7 @@ time.sleep(1.0)
 
 '''
 while vs.isOpened():
+    time.sleep(0.1)
     _, frame = vs.read()
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
@@ -56,6 +59,21 @@ while vs.isOpened():
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+        center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
+        # kalman_new by vatae
+        a,b,c,d= kalman_new.kalman(np.mat(center_float[0]))
+
+        #kalman by wei
+        # kalman.updatePisiton(center_float[0])
+        # kalman.initParameter()
+        # a,b,c,d= kalman.Localization(Acc_Meter=0)
+
+        ## write the data into the .txt to analysis
+        # file_handle = open('1.txt', mode='a')
+        # file_handle.writelines(['\nNo.',str(d),'\tKalman postion:\t',str(a),'\tsensor positon:\t',str(b),'\tDifference:\t',str(c)])
+        # file_handle.close()
+
+        # print(kalman.sensor_x)
         # print(radius)
         # only proceed if the radius meets a minimum size
         if radius > 10:

@@ -58,10 +58,10 @@ def Localization(Acc_Meter):
     Temp_State = np.array([[sensor_x],[Velocity_Calculation(CurrentStates[1],sensor_x,CurrentStates[0])],[1]], np.float32)
 
     EstiCurrStates = SystemMatrix * EsticurrStates + SystemMatrix * P_k_matrix * np.linalg.inv(Temp) * (Temp_State - EsticurrStates)    # x
-    P_k_Matrix = SystemMatrix * P_k_matrix * (np.eye(3) - np.linalg.inv(Temp) * P_k_matrix)* SystemMatrix.transpose() + Q_0_matrix # p
+    P_k_Matrix = SystemMatrix * P_k_matrix * (np.identity(3) - np.linalg.inv(Temp) * P_k_matrix)* SystemMatrix.transpose() + Q_0_matrix # p
 
     outputstateFromesti()
-    print("卡尔曼滤波位置：",EstiCurrStates[0][0],"检测位置:",sensor_x,"差值：",EstiCurrStates[0][0] - sensor_x)
+    # print("卡尔曼滤波位置：",EstiCurrStates[0][0],"检测位置:",sensor_x,"差值：",EstiCurrStates[0][0] - sensor_x)
     count = count +1
     return EstiCurrStates[0][0],sensor_x,(EstiCurrStates[0][0] - sensor_x),count
 

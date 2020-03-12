@@ -36,7 +36,7 @@ time.sleep(1.0)
 
 '''
 while vs.isOpened():
-    time.sleep(0.1)
+    time.sleep(0.05)
     _, frame = vs.read()
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)

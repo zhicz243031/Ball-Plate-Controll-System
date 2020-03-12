@@ -7,7 +7,7 @@ import time
 import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
-
+import kalman_new
 
 vs = cv2.VideoCapture('BlueBal.avi')
 # time.sleep(1.0)
@@ -57,6 +57,17 @@ sliderRadiusDefault = 10
 sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
+
+useKalmanBool = False
+def UseKalmanJudge():  # function to judge weather use kalman filter or not.
+    global useKalmanBool
+
+    if useKalmanBool == False:
+        useKalmanBool = True
+        Bkalman["text"] = "Kalman Filter ON"
+    else:
+        useKalmanBool = False
+        Bkalman["text"] = "Kalman Filter OFF"
 
 # 验证小球运动的轨道
 showCalqueCalibrationBool = False
@@ -195,12 +206,17 @@ def main():
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-        print((x,y),radius)
+        center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
+        # print((x,y),radius)
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
+            if useKalmanBool == False:
+                a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
+                d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
+                print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
             PIDcontrol()
 
     # cv2.imshow('mask_before', mask_before)
@@ -280,6 +296,8 @@ FrameServosControl = tk.LabelFrame(controllerWindow, text="System Control")
 FrameServosControl.place(x=20, y=580, width=390)
 BQuit = tk.Button(FrameServosControl, text="Quit", command=endProgam)
 BQuit.pack()
+Bkalman = tk.Button(FrameServosControl, text="Kalman Filter OFF", command=UseKalmanJudge)
+Bkalman.pack()
 
 '''
 控制PID参数

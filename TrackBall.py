@@ -36,7 +36,7 @@ time.sleep(1.0)
 
 '''
 while vs.isOpened():
-    time.sleep(0.05)
+    time.sleep(0.01)
     _, frame = vs.read()
     frame = imutils.resize(frame, width=600)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
@@ -83,8 +83,14 @@ while vs.isOpened():
 
     # cv2.imshow('mask_before', mask_before)
     cv2.imshow('frame', frame)
+    cv2.imshow('mask_before', mask_before)
+    cv2.imshow('mask_erode', mask_erode)
+    cv2.imshow('mask', mask)
     if cv2.waitKey(1) == ord('q'):
         break
+    # delay = 30
+    # if (delay >= 0 & cv2.waitKey(delay) >= 0):
+    #     cv2.waitKey(0)
 
 vs.release()
 cv2.destroyAllWindows()

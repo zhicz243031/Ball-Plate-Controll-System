@@ -151,6 +151,8 @@ def main():
     global H, S, V
     global getPixelColor
     global refX, refY, totalErrorX, totalErrorY
+    global x, y, alpha, beta
+    global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
     global camWidth, camHeight
     global timeInterval, start_time
 
@@ -216,8 +218,11 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
+                # print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
             PIDcontrol()
+            start_time = time.time()
+        else:
+            totalErrorX, totalErrorY = 0, 0
 
     # cv2.imshow('mask_before', mask_before)
     # cv2.imshow('frame', frame)
@@ -234,7 +239,10 @@ def main():
     # avefps = 0
     # avefps = (avefps + fps)/a
     # print(avefps)
+    # 延迟5ms之后，进入主程序，从而形成循环。
     lmain.after(5, main)
+
+    print('PID控制部分。')
 
 
 

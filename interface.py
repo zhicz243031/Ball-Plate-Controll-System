@@ -8,9 +8,19 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
+from math import *
+
+lines = open("data.txt").read().splitlines()  # Read the file data.txt and split it by lines and put it in a list
+max_alpha, max_theta = lines[1].split("|")
+max_alpha = - float(max_alpha)
+max_theta = float(max_theta)
+dataDict = {}
+for i in range(1, len(lines)):  # for loop to go over the lines list and feed it to the dictionary
+    alpha, theta = lines[i].split("|")
+    dataDict[float(alpha)] = float(theta)
 
 vs = cv2.VideoCapture('BlueBal.avi')
-# time.sleep(1.0)
+time.sleep(.2)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
 camHeight = 480
@@ -58,6 +68,75 @@ sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
 
+pointsListCircle = []  # create an empty list to put points refinates that describes a circle patern
+def createPointsListCircle():  # create an array of 360 points to describe a whole circle with the argument as radius
+    global pointsListCircle
+    pointsListCircle = []
+    for angle in range(0, 360):
+        angle = angle - 90
+        pointsListCircle.append(
+            [sliderRadius.get() * cos(radians(angle)) + 240, sliderRadius.get() * sin(radians(angle)) + 240])
+
+pointsListEight = []  # create an empty list to put points refinates that describes an Eight patern
+def createPointsListEight():  # create an array of 360 points to describe an Eight shape with the argument as radius
+    global pointsListEight
+    pointsListEight = []
+    for angle in range(270, 270 + 360):
+        pointsListEight.append([sliderRadius.get() * cos(radians(angle)) + 240,
+                                sliderRadius.get() * sin(radians(angle)) + 240 + sliderRadius.get()])
+    for angle in range(360, 0, -1):
+        angle = angle + 90
+        pointsListEight.append([sliderRadius.get() * cos(radians(angle)) + 240,
+                                sliderRadius.get() * sin(radians(angle)) + 240 - sliderRadius.get()])
+drawCircleBool = False  # flag to draw Circle
+def startDrawCircle():
+    # function triggered by Circle pattern Button as a Toggle
+    createPointsListCircle()
+    global drawCircleBool, drawEightBool, refX, refY
+    if drawCircleBool == False:
+        drawCircleBool = True
+        BballDrawCircle["text"] = "Disable Circle Trajectory"
+    else:
+        drawCircleBool = False
+        refX, refY = 240, 240
+        # sliderCoefP.set(sliderCoefPDefault)
+        BballDrawCircle["text"] = "Enable Circle Trajectory"
+    resetPID()
+
+drawEightBool = False
+def startDrawEight():  # function triggered by Eight pattern Button as a Toggle
+    global drawEightBool, drawCircleBool, refX, refY
+    createPointsListEight()
+    if drawEightBool == False:
+        drawEightBool = True
+        BballDrawEight["text"] = "Disable Eight Trajectory"
+    else:
+        drawEightBool = False
+        refX, refY = 240, 240
+        # sliderCoefP.set(sliderCoefPDefault)
+        BballDrawEight["text"] = "Enable Eight Trajectory"
+    resetPID()
+# 球的运动轨迹是圆还是椭圆，一共分为三步
+# 第一步：创建圆与椭圆的运动点列表
+# 第二步：编写按键控制的bool逻辑
+# 第三步：判断bool逻辑，是否要进入圆与椭圆运行状态。
+pointCounter = 0  # a counter that will cover the whole 360 points in case of draw circle or eight
+def drawWithBall():  # function triggered after the startDrawCircle or startDrawEight
+    global pointCounter, refX, refY
+    if drawCircleBool == True:
+        if pointCounter >= len(pointsListCircle):
+            pointCounter = 0
+        point = pointsListCircle[pointCounter]
+        refX, refY = point[0], point[1]
+        pointCounter += sliderSpeed.get()
+    if drawEightBool == True:
+        if pointCounter >= len(pointsListEight):
+            pointCounter = 0
+        point = pointsListEight[pointCounter]
+        refX, refY = point[0], point[1]
+        pointCounter += sliderSpeed.get()
+
+# 控制知否使用kalman filter
 useKalmanBool = False
 def UseKalmanJudge():  # function to judge weather use kalman filter or not.
     global useKalmanBool
@@ -129,13 +208,98 @@ def showGraphWindow():  # function that toggles the Graph window and update the 
 def refreshGraph():  # function that reset the time variable to 480 if the graph is full
     global t
     t = 480
+# 更新圆形与8字型曲线的路线
+def radiusUpdate(self):
+    createPointsListCircle()
+    createPointsListEight()
 
+def resetPID():  # function that compact the plate
+    global totalErrorX, totalErrorY, prevErrorX, prevErrorY, prevIntegX, prevIntegY, prevDerivX, prevDerivY
+    totalErrorX = 0
+    totalErrorY = 0
+    prevErrorX = 0
+    prevErrorY = 0
+    prevIntegX = 0
+    prevIntegY = 0
+    prevDerivX = 0
+    prevDerivY = 0
 # PID控制程序
-def PIDcontrol():
+totalErrorX = 0
+totalErrorY = 0
+timeInterval = 1
+alpha, beta, prevAlpha, prevBeta = 0, 0, 0, 0
+N = 20  # Derivative Coefficient
+prevDerivX = 0  # previous derivative
+prevDerivY = 0  # previous derivative
+prevIntegX = 0
+prevIntegY = 0
+delivery_time = 0
+prevErrorX = 0
+prevErrorY = 0
+def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
+
+    global totalErrorX, totalErrorY
+    global alpha, beta, prevAlpha, prevBeta
+    global startBalanceBall, arduinoIsConnected
+    global Ts, delivery_time, N
+    global prevDerivX, prevDerivY, prevIntegX, prevIntegY
+    global prevErrorX, prevErrorY
+
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
-    # print(Kp,Ki,Kd)
+
+    Ts = time.time() - delivery_time  # sampling time
+    delivery_time = time.time()
+    # print(Ts)
+
+    errorX = refX - ballPosX
+    errorY = refY - ballPosY
+
+    try:
+        derivX = (prevBallPosX - ballPosX) / Ts
+    except ZeroDivisionError:
+        derivX = 0
+
+    try:
+        derivY = (prevBallPosY - ballPosY) / Ts
+    except ZeroDivisionError:
+        derivY = 0
+
+    Cix = Ki * totalErrorX  # prevIntegX + errorX*Ki*Ts                    #Ki * totalErrorX
+    Ciy = Ki * totalErrorY  # prevIntegY + errorY*Ki*Ts                    #Ki * totalErrorX
+
+    Cdx = Ts / (1 + N * Ts) * (
+            N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
+    Cdy = Ts / (1 + N * Ts) * (
+            N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
+
+    Ix = Kp * errorX + Cix + Cdx
+    Iy = Kp * errorY + Ciy + Cdy
+    Ix = round(Ix, 1)
+    Iy = round(Iy, 1)
+
+
+
+
+    if Ix > max_alpha:
+        Ix = max_alpha
+    elif Ix < - max_alpha:
+        Ix = - max_alpha
+    if Iy > max_alpha:
+        Iy = max_alpha
+    elif Iy < - max_alpha:
+        Iy = - max_alpha
+
+    print(dataDict[Ix],dataDict[Iy])
+
+    prevDerivX = Cdx
+    prevDerivY = Cdy
+    prevIntegX = Cix
+    prevIntegY = Ciy
+    prevErrorX = errorX
+    prevErrorY = errorY
+    # print(totalErrorX)
 
 # 退出interface
 def endProgam():
@@ -145,7 +309,8 @@ def endProgam():
 def donothing():
     pass
 
-
+prevX, prevY = 0, 0
+prevRefX, prevRefY = 0, 0
 start_time = 0
 def main():
     global H, S, V
@@ -209,7 +374,7 @@ def main():
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
-        # print((x,y),radius)
+
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -218,8 +383,9 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                # print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
-            PIDcontrol()
+
+            # PIDcontrol()
+            PIDcontrol(240, 240, prevX, prevY, refX, refY)
             start_time = time.time()
         else:
             totalErrorX, totalErrorY = 0, 0
@@ -241,8 +407,14 @@ def main():
     # print(avefps)
     # 延迟5ms之后，进入主程序，从而形成循环。
     lmain.after(5, main)
+    # 查询是否要画圆和椭圆
+    drawWithBall()
+    prevX, prevY = int(x), int(y)
+    prevRefX, prevRefY = refX, refY
+    prevAlpha = alpha
+    prevBeta = beta
 
-    print('PID控制部分。')
+    # print('PID控制部分。')
 
 
 
@@ -347,16 +519,16 @@ FrameBallControl = tk.LabelFrame(controllerWindow, text="Ball Control")
 FrameBallControl.place(x=420, y=350, width=380, height=200)
 
 sliderRadius = tk.Scale(FrameBallControl, from_=0, to=300, orient="horizontal", label="Radius", length=350,
-                        tickinterval=50, resolution=1)
+                        tickinterval=50, resolution=1,command=radiusUpdate)
 sliderRadius.set(sliderRadiusDefault)
 sliderRadius.pack()
 sliderSpeed = tk.Scale(FrameBallControl, from_=0, to=20, orient="horizontal", label="Speed", length=350, tickinterval=1,
                        resolution=1)
 sliderSpeed.set(sliderSpeedDefault)
 sliderSpeed.pack()
-BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", command=showCalqueCalibration)
+BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", command=startDrawCircle)
 BballDrawCircle.place(x=70, y=-5)
-BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=showCalqueCalibration)
+BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=startDrawEight)
 BballDrawEight.place(x=220, y=-5)
 
 # 获取鼠标的位置，转换成像素值。

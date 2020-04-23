@@ -5,6 +5,7 @@ import cv2
 import imutils  # a python package is used as image processing.
 import time
 import kalman_new
+
 # import kalman
 
 '''
@@ -16,8 +17,10 @@ import kalman_new
 greenLower = (29, 86, 6)
 greenUpper = (120, 255, 200)
 
-vs = cv2.VideoCapture('BlueBal.avi')
-time.sleep(1.0)
+vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+vs.set(3, 1280)
+vs.set(4, 720)
+time.sleep(.5)
 
 '''
 1. vs.isOpened() if get the video, it will back the True continually.
@@ -38,7 +41,8 @@ time.sleep(1.0)
 while vs.isOpened():
     time.sleep(0.01)
     _, frame = vs.read()
-    frame = imutils.resize(frame, width=600)
+    frame = frame[0:720, 280:1030]
+    frame = imutils.resize(frame, width=720)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -61,9 +65,9 @@ while vs.isOpened():
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
         # kalman_new by vatae
-        a,b,c,d= kalman_new.kalman(np.mat(center_float[0]))
+        a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
 
-        #kalman by wei
+        # kalman by wei
         # kalman.updatePisiton(center_float[0])
         # kalman.initParameter()
         # a,b,c,d= kalman.Localization(Acc_Meter=0)
@@ -83,9 +87,9 @@ while vs.isOpened():
 
     # cv2.imshow('mask_before', mask_before)
     cv2.imshow('frame', frame)
-    cv2.imshow('mask_before', mask_before)
-    cv2.imshow('mask_erode', mask_erode)
-    cv2.imshow('mask', mask)
+    # cv2.imshow('mask_before', mask_before)
+    # cv2.imshow('mask_erode', mask_erode)
+    # cv2.imshow('mask', mask)
     if cv2.waitKey(1) == ord('q'):
         break
     # delay = 30

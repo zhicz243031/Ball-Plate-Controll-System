@@ -9,14 +9,19 @@ import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
 
-vs = cv2.VideoCapture('BlueBal.avi')
+# vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
+vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+vs.set(3, 1280)
+vs.set(4, 720)
+print("succeed.")
 # time.sleep(1.0)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
-camHeight = 480
-camWidth = 640
+camHeight = 1280
+camWidth = 720
 H, S, V = 0, 0, 0  # the color properties of the Pixel to track
 mouseX, mouseY = 0, 0  # declare variables to capture mouse position for color tracking
+lostballcount = 0
 
 # 展示了系统控制面板
 controllerWindow = tk.Tk()  # initializes this tk interpreter and creates the root window
@@ -59,6 +64,8 @@ sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
 
 useKalmanBool = False
+
+
 def UseKalmanJudge():  # function to judge weather use kalman filter or not.
     global useKalmanBool
 
@@ -69,11 +76,15 @@ def UseKalmanJudge():  # function to judge weather use kalman filter or not.
         useKalmanBool = False
         Bkalman["text"] = "Kalman Filter OFF"
 
+
 # 验证小球运动的轨道
 showCalqueCalibrationBool = False
+
+
 def showCalqueCalibration():
     global showCalqueCalibrationBool
     showCalqueCalibrationBool = not showCalqueCalibrationBool
+
 
 # 取色笔，可以获得像素点的HSV的值
 def getMouseClickPosition(mousePosition):  # get mouse click position
@@ -82,17 +93,23 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
     mouseX, mouseY = mousePosition.x, mousePosition.y
     getPixelColor = True
 
+
 # 用鼠标设定小球的运动位置，为其设定参考点
 refY = 240  # reference refinate Y
 refX = 240  # reference refinate X
+
+
 def setRefWithMouse(mousePosition):
     global refX, refY
     if mousePosition.y > 10:
         refreshGraph()
         refX, refY = mousePosition.x, mousePosition.y
 
+
 # 左上角，实时视频窗口，控制是不是要显示
 showVideoWindow = False
+
+
 def showCameraFrameWindow():  # function to toggle the showVideoWindow and change the label text of the button
     global showVideoWindow, showGraph
     global BShowVideoTxt
@@ -109,8 +126,11 @@ def showCameraFrameWindow():  # function to toggle the showVideoWindow and chang
         showVideoWindow = False
         BShowVideo["text"] = "Show Live CAM feed"
 
+
 # 控制是否显示建模图。建模图显示了给定与输入输出之间的实时关系。
 showGraph = False  # bool for Graph window
+
+
 def showGraphWindow():  # function that toggles the Graph window and update the show graph button
     global showGraph, showVideoWindow
     global BShowGraph
@@ -126,9 +146,11 @@ def showGraphWindow():  # function that toggles the Graph window and update the 
         showGraph = False
         BShowGraph["text"] = "Show Plot"
 
+
 def refreshGraph():  # function that reset the time variable to 480 if the graph is full
     global t
     t = 480
+
 
 # PID控制程序
 def PIDcontrol():
@@ -137,23 +159,27 @@ def PIDcontrol():
     Kd = sliderCoefD.get()
     # print(Kp,Ki,Kd)
 
+
 # 退出interface
 def endProgam():
     controllerWindow.destroy()
 
- # function that does nothing, may be used for delay
+
+# function that does nothing, may be used for delay
 def donothing():
     pass
 
 
 start_time = 0
+
+
 def main():
     global H, S, V
     global getPixelColor
     global refX, refY, totalErrorX, totalErrorY
     global x, y, alpha, beta
     global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
-    global camWidth, camHeight
+    global camWidth, camHeight, lostballcount
     global timeInterval, start_time
 
     start_time = time.time()
@@ -163,11 +189,13 @@ def main():
     # height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
     # print(width,height)
     time.sleep(0.015)
-    frame = imutils.resize(frame, width=600)
+    frame = frame[0:720, 280:1030]
+    # frame = imutils.resize(frame, width=600)
+    frame = imutils.resize(frame, width=720)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
     # 相当于取色笔
-    if getPixelColor == True and mouseY > 0 and mouseY < 480 and mouseX < 480:
+    if getPixelColor == True and mouseY > 0 and mouseY < 720 and mouseX < 720:
         pixelColorOnClick = frame[mouseY, mouseX]
         pixelColorOnClick = np.uint8([[pixelColorOnClick]])
         pixelColorOnClick = cv2.cvtColor(pixelColorOnClick, cv2.COLOR_BGR2HSV)
@@ -178,17 +206,19 @@ def main():
         print(H, S, V)
         getPixelColor = False
 
-    # greenLower = (29, 86, 6)
-    # greenUpper = (64, 255, 255)
-    # print(sliderLH.get())
-    greenLower = (29 - sliderLH.get(), 86 - sliderLS.get(), 6 - sliderLV.get())
-    greenUpper = (120 + sliderUH.get(), 255 + sliderUS.get() , 200 + sliderUV.get())
-    # print(greenUpper)
-    # greenLower = (29, 86, 6)
-    # greenUpper = (104, 255, 145)
+    # 银质小球
+    greenLower = (48 - sliderLH.get(), 65 - sliderLS.get(), 155 - sliderLV.get())
+    greenUpper = (85 + sliderUH.get(), 205 + sliderUS.get(), 255 + sliderUV.get())
+
+    # 黄色小弹力球
+    #     greenLower = (25, 35, 255)
+    #     greenUpper = (35, 55, 255)
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
     mask_erode = cv2.erode(mask_before, None, iterations=2)
     mask = cv2.dilate(mask_erode, None, iterations=2)
+    # cv2.imshow('mask_before', mask_before)
+    # cv2.imshow('mask_erode', mask_erode)
+    # cv2.imshow('mask', mask)
 
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     a = cnts
@@ -223,12 +253,13 @@ def main():
             start_time = time.time()
         else:
             totalErrorX, totalErrorY = 0, 0
-
-    # cv2.imshow('mask_before', mask_before)
+    else:
+        lostballcount = lostballcount + 1
+        print('lost ball:', lostballcount)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) #转换颜色从BGR到RGB
-        frame = Image.fromarray(frame) #将图像转换成Image对象
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB
+        frame = Image.fromarray(frame)  # 将图像转换成Image对象
         imgtk = ImageTk.PhotoImage(image=frame)
         lmain.imgtk = imgtk
         lmain.configure(image=imgtk)
@@ -241,9 +272,6 @@ def main():
     # print(avefps)
     # 延迟5ms之后，进入主程序，从而形成循环。
     lmain.after(5, main)
-
-    print('PID控制部分。')
-
 
 
 '''
@@ -364,7 +392,6 @@ BballDrawEight.place(x=220, y=-5)
 videoWindow.protocol("WM_DELETE_WINDOW", donothing)
 videoWindow.bind("<Button-3>", getMouseClickPosition)
 videoWindow.bind("<Button-1>", setRefWithMouse)  # mouse click to set reference position
-
 
 main()
 tk.mainloop()

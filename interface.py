@@ -8,13 +8,16 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
+import SerialandAngle
+
+# 初始化，平衡平板
+SerialandAngle.Angle2SerPort(0,0)
 
 # vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
 vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 vs.set(3, 1280)
 vs.set(4, 720)
-print("succeed.")
-# time.sleep(1.0)
+print("Open camera succeed.")
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
 camHeight = 1280
@@ -75,7 +78,6 @@ def UseKalmanJudge():  # function to judge weather use kalman filter or not.
     else:
         useKalmanBool = False
         Bkalman["text"] = "Kalman Filter OFF"
-
 
 # 验证小球运动的轨道
 showCalqueCalibrationBool = False
@@ -185,11 +187,9 @@ def main():
     start_time = time.time()
 
     _, frame = vs.read()
-    # width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
-    # height = int(vs.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
-    # print(width,height)
     time.sleep(0.015)
     frame = frame[0:720, 280:1030]
+
     # frame = imutils.resize(frame, width=600)
     frame = imutils.resize(frame, width=720)
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
@@ -206,13 +206,10 @@ def main():
         print(H, S, V)
         getPixelColor = False
 
-    # 银质小球
+    # 银质绿面小球
     greenLower = (48 - sliderLH.get(), 65 - sliderLS.get(), 155 - sliderLV.get())
     greenUpper = (85 + sliderUH.get(), 205 + sliderUS.get(), 255 + sliderUV.get())
 
-    # 黄色小弹力球
-    #     greenLower = (25, 35, 255)
-    #     greenUpper = (35, 55, 255)
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
     mask_erode = cv2.erode(mask_before, None, iterations=2)
     mask = cv2.dilate(mask_erode, None, iterations=2)
@@ -221,7 +218,6 @@ def main():
     # cv2.imshow('mask', mask)
 
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    a = cnts
     cnts = imutils.grab_contours(cnts)
     center = None
 
@@ -239,7 +235,7 @@ def main():
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
-        # print((x,y),radius)
+
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -248,7 +244,7 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                # print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
+                print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
             PIDcontrol()
             start_time = time.time()
         else:

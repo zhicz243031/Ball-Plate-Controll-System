@@ -11,7 +11,7 @@ import time
 import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
-import kalman_new
+# import kalman_new
 
 vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
 # vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -230,6 +230,7 @@ def main():
     # avefps = 0
     # avefps = (avefps + fps)/a
     # print(avefps)
+
     # 延迟5ms之后，进入主程序，从而形成循环。
     lmain.after(5, main)
 

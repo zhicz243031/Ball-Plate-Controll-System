@@ -9,15 +9,17 @@ import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
 import SerialandAngle
+from math import *
 
 # 初始化，平衡平板
-SerialandAngle.Angle2SerPort(0,0)
+SerialandAngle.Angle2SerPort(0, 0)
 
 # vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
 vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 vs.set(3, 1280)
 vs.set(4, 720)
 print("Open camera succeed.")
+time.sleep(.2)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
 camHeight = 1280
@@ -32,6 +34,7 @@ controllerWindow.title("2DOF Ball-Plate Control Window ")  # define title of the
 controllerWindow.geometry("1200x800")  # define size of the root window
 controllerWindow["bg"] = "lightgrey"  # define the background color of the root window
 controllerWindow.resizable(0, 0)  # define if the root window is resizable or not for Vertical and horizontal，不可以拉伸
+
 # 主控制面板背景图片
 # canvas = tk.Canvas(controllerWindow, width=1200,height=800,bd=0, highlightthickness=0)
 # imgpath = 'background.gif'
@@ -39,6 +42,7 @@ controllerWindow.resizable(0, 0)  # define if the root window is resizable or no
 # photo = ImageTk.PhotoImage(img)
 # canvas.create_image(500, 20, image=photo)
 # canvas.pack()
+
 # 展示了实时画面的控制面板
 videoWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "controllerwindow"
 videoWindow.title("Cam Footage")  # define title of videowindow
@@ -46,6 +50,7 @@ videoWindow.resizable(0, 0)  # Cannot resize the window
 lmain = tk.Label(videoWindow)  # create an empty label widget in the videoWindow
 lmain.pack()  # adjust the size of the videowindow to fit the label lmain
 videoWindow.withdraw()  # hide the window
+
 # 展示PID控制下输入输出的跟踪情况
 graphWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "graphwindow"
 graphWindow.title("Position in function of time")  # define window title
@@ -66,6 +71,91 @@ sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
 sliderRefYDefault = camHeight / 2
 
+pointsListCircle = []  # create an empty list to put points refinates that describes a circle patern
+
+
+def createPointsListCircle():  # create an array of 360 points to describe a whole circle with the argument as radius
+    global pointsListCircle
+    pointsListCircle = []
+    for angle in range(0, 360):
+        angle = angle - 90
+        pointsListCircle.append(
+            [sliderRadius.get() * cos(radians(angle)) + 240, sliderRadius.get() * sin(radians(angle)) + 240])
+
+
+pointsListEight = []  # create an empty list to put points refinates that describes an Eight patern
+
+
+def createPointsListEight():  # create an array of 360 points to describe an Eight shape with the argument as radius
+    global pointsListEight
+    pointsListEight = []
+    for angle in range(270, 270 + 360):
+        pointsListEight.append([sliderRadius.get() * cos(radians(angle)) + 240,
+                                sliderRadius.get() * sin(radians(angle)) + 240 + sliderRadius.get()])
+    for angle in range(360, 0, -1):
+        angle = angle + 90
+        pointsListEight.append([sliderRadius.get() * cos(radians(angle)) + 240,
+                                sliderRadius.get() * sin(radians(angle)) + 240 - sliderRadius.get()])
+
+
+drawCircleBool = False  # flag to draw Circle
+
+
+def startDrawCircle():
+    # function triggered by Circle pattern Button as a Toggle
+    createPointsListCircle()
+    global drawCircleBool, drawEightBool, refX, refY
+    if drawCircleBool == False:
+        drawCircleBool = True
+        BballDrawCircle["text"] = "Disable Circle Trajectory"
+    else:
+        drawCircleBool = False
+        refX, refY = 240, 240
+        # sliderCoefP.set(sliderCoefPDefault)
+        BballDrawCircle["text"] = "Enable Circle Trajectory"
+    resetPID()
+
+
+drawEightBool = False
+
+
+def startDrawEight():  # function triggered by Eight pattern Button as a Toggle
+    global drawEightBool, drawCircleBool, refX, refY
+    createPointsListEight()
+    if drawEightBool == False:
+        drawEightBool = True
+        BballDrawEight["text"] = "Disable Eight Trajectory"
+    else:
+        drawEightBool = False
+        refX, refY = 240, 240
+        # sliderCoefP.set(sliderCoefPDefault)
+        BballDrawEight["text"] = "Enable Eight Trajectory"
+    resetPID()
+
+
+# 球的运动轨迹是圆还是椭圆，一共分为三步
+# 第一步：创建圆与椭圆的运动点列表
+# 第二步：编写按键控制的bool逻辑
+# 第三步：判断bool逻辑，是否要进入圆与椭圆运行状态。
+pointCounter = 0  # a counter that will cover the whole 360 points in case of draw circle or eight
+
+
+def drawWithBall():  # function triggered after the startDrawCircle or startDrawEight
+    global pointCounter, refX, refY
+    if drawCircleBool == True:
+        if pointCounter >= len(pointsListCircle):
+            pointCounter = 0
+            point = pointsListCircle[pointCounter]
+        refX, refY = point[0], point[1]
+        pointCounter += sliderSpeed.get()
+    if drawEightBool == True:
+        if pointCounter >= len(pointsListEight):
+            pointCounter = 0
+        point = pointsListEight[pointCounter]
+        refX, refY = point[0], point[1]
+        pointCounter += sliderSpeed.get()
+
+
 useKalmanBool = False
 
 
@@ -78,6 +168,7 @@ def UseKalmanJudge():  # function to judge weather use kalman filter or not.
     else:
         useKalmanBool = False
         Bkalman["text"] = "Kalman Filter OFF"
+
 
 # 验证小球运动的轨道
 showCalqueCalibrationBool = False
@@ -97,8 +188,8 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
 
 
 # 用鼠标设定小球的运动位置，为其设定参考点
-refY = 240  # reference refinate Y
-refX = 240  # reference refinate X
+refY = 360  # reference refinate Y
+refX = 360  # reference refinate X
 
 
 def setRefWithMouse(mousePosition):
@@ -154,16 +245,100 @@ def refreshGraph():  # function that reset the time variable to 480 if the graph
     t = 480
 
 
+# 更新圆形与8字型曲线的路线
+def radiusUpdate(self):
+    createPointsListCircle()
+    createPointsListEight()
+
+
+def resetPID():  # function that compact the plate
+    global totalErrorX, totalErrorY, prevErrorX, prevErrorY, prevIntegX, prevIntegY, prevDerivX, prevDerivY
+    totalErrorX = 0
+    totalErrorY = 0
+    prevErrorX = 0
+    prevErrorY = 0
+    prevIntegX = 0
+    prevIntegY = 0
+    prevDerivX = 0
+    prevDerivY = 0
+
+
 # PID控制程序
-def PIDcontrol():
+totalErrorX = 0
+totalErrorY = 0
+timeInterval = 1
+alpha, beta, prevAlpha, prevBeta = 0, 0, 0, 0
+N = 20  # Derivative Coefficient
+prevDerivX = 0  # previous derivative
+prevDerivY = 0  # previous derivative
+prevIntegX = 0
+prevIntegY = 0
+delivery_time = 0
+prevErrorX = 0
+prevErrorY = 0
+
+
+def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
+    global totalErrorX, totalErrorY
+    global alpha, beta, prevAlpha, prevBeta
+    global startBalanceBall, arduinoIsConnected
+    global Ts, delivery_time, N
+    global prevDerivX, prevDerivY, prevIntegX, prevIntegY
+    global prevErrorX, prevErrorY
+
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
-    # print(Kp,Ki,Kd)
+
+    Ts = time.time() - delivery_time  # sampling time
+    delivery_time = time.time()
+    # print(Ts)
+    errorX = refX - ballPosX
+    errorY = refY - ballPosY
+    # print(errorX,errorY)
+
+    try:
+        derivX = (prevBallPosX - ballPosX) / Ts
+
+    except ZeroDivisionError:
+        derivX = 0
+
+    try:
+        derivY = (prevBallPosY - ballPosY) / Ts
+    except ZeroDivisionError:
+        derivY = 0
+    # 使用PD控制器，I这一项完全为零
+    Cix = Ki * totalErrorX  # prevIntegX + errorX*Ki*Ts                    #Ki * totalErrorX
+    Ciy = Ki * totalErrorY  # prevIntegY + errorY*Ki*Ts                    #Ki * totalErrorX
+
+    Cdx = Ts / (1 + N * Ts) * (
+            N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
+    Cdy = Ts / (1 + N * Ts) * (
+            N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
+
+    Ix = Kp * errorX + Cix + Cdx
+    Iy = Kp * errorY + Ciy + Cdy
+    Ix = round(Ix, 1)
+    Iy = round(Iy, 1)
+
+    print(Ix, Iy)
+    if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
+        SerialandAngle.Angle2SerPort(-Ix / 3.0, -Iy / 3.0)
+    else:
+        SerialandAngle.Angle2SerPort(Ix / 3.0, Iy / 3.0)
+
+    prevDerivX = Cdx
+    prevDerivY = Cdy
+    prevIntegX = Cix
+    prevIntegY = Ciy
+    prevErrorX = errorX
+    prevErrorY = errorY
+    # print(totalErrorX)
 
 
 # 退出interface
 def endProgam():
+    SerialandAngle.ser.close()
     controllerWindow.destroy()
 
 
@@ -172,7 +347,11 @@ def donothing():
     pass
 
 
+
+prevX, prevY = 0, 0
+prevRefX, prevRefY = 0, 0
 start_time = 0
+delivery_time11 = 0
 
 
 def main():
@@ -182,18 +361,22 @@ def main():
     global x, y, alpha, beta
     global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
     global camWidth, camHeight, lostballcount
-    global timeInterval, start_time
+    global timeInterval, start_time, delivery_time11
 
-    start_time = time.time()
+    # Ts = time.time() - delivery_time11  # sampling time
+    # delivery_time11 = time.time()
+    # print(Ts)
 
     _, frame = vs.read()
-    time.sleep(0.015)
-    frame = frame[0:720, 280:1030]
-
-    # frame = imutils.resize(frame, width=600)
+    # frame = frame[0:720, 280:1030]
+    # frame = frame[10:700, 310:1010]
+    frame = frame[40:670, 340:980]
+    # frame = imutils.resize(frame, width=600) # 视频验证窗口
     frame = imutils.resize(frame, width=720)
+
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+
     # 相当于取色笔
     if getPixelColor == True and mouseY > 0 and mouseY < 720 and mouseX < 720:
         pixelColorOnClick = frame[mouseY, mouseX]
@@ -207,8 +390,11 @@ def main():
         getPixelColor = False
 
     # 银质绿面小球
-    greenLower = (48 - sliderLH.get(), 65 - sliderLS.get(), 155 - sliderLV.get())
-    greenUpper = (85 + sliderUH.get(), 205 + sliderUS.get(), 255 + sliderUV.get())
+    greenLower = (43 - sliderLH.get(), 30 - sliderLS.get(), 140 - sliderLV.get())
+    greenUpper = (105 + sliderUH.get(), 160 + sliderUS.get(), 255 + sliderUV.get())
+    # 绿色弹力球
+    # greenLower = (25 - sliderLH.get(), 28 - sliderLS.get(), 250 - sliderLV.get())
+    # greenUpper = (35 + sliderUH.get(), 60 + sliderUS.get(), 255 + sliderUV.get())
 
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
     mask_erode = cv2.erode(mask_before, None, iterations=2)
@@ -218,6 +404,7 @@ def main():
     # cv2.imshow('mask', mask)
 
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    a = cnts
     cnts = imutils.grab_contours(cnts)
     center = None
 
@@ -244,14 +431,15 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                print("卡尔曼滤波位置：", (a, d), "检测位置:", (b, e), "差值：", ((a - d), (b - e)))
-            PIDcontrol()
-            start_time = time.time()
+                # print("卡尔曼滤波位置：", (x, y), "检测位置:", (type(b), e), "差值：", ((a - d), (b - e)))
+
+            PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
         else:
             totalErrorX, totalErrorY = 0, 0
     else:
-        lostballcount = lostballcount + 1
-        print('lost ball:', lostballcount)
+        # lostballcount = lostballcount + 1
+        # print('lost ball:', lostballcount)
+        SerialandAngle.Angle2SerPort(0, 0)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB
@@ -259,15 +447,25 @@ def main():
         imgtk = ImageTk.PhotoImage(image=frame)
         lmain.imgtk = imgtk
         lmain.configure(image=imgtk)
-    # timeInterval = time.time() - start_time
+
     # fps = int(1/timeInterval)
     # a = 0
     # a = a + 1
     # avefps = 0
     # avefps = (avefps + fps)/a
     # print(avefps)
-    # 延迟5ms之后，进入主程序，从而形成循环。
-    lmain.after(5, main)
+
+    # 延迟20ms之后，进入主程序，从而形成循环。
+    lmain.after(20, main)
+    # 查询是否要画圆和椭圆
+    drawWithBall()
+    try:
+        prevX, prevY = int(x), int(y)
+    except:
+        pass
+    prevRefX, prevRefY = refX, refY
+    prevAlpha = alpha
+    prevBeta = beta
 
 
 '''
@@ -371,16 +569,16 @@ FrameBallControl = tk.LabelFrame(controllerWindow, text="Ball Control")
 FrameBallControl.place(x=420, y=350, width=380, height=200)
 
 sliderRadius = tk.Scale(FrameBallControl, from_=0, to=300, orient="horizontal", label="Radius", length=350,
-                        tickinterval=50, resolution=1)
+                        tickinterval=50, resolution=1, command=radiusUpdate)
 sliderRadius.set(sliderRadiusDefault)
 sliderRadius.pack()
 sliderSpeed = tk.Scale(FrameBallControl, from_=0, to=20, orient="horizontal", label="Speed", length=350, tickinterval=1,
                        resolution=1)
 sliderSpeed.set(sliderSpeedDefault)
 sliderSpeed.pack()
-BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", command=showCalqueCalibration)
+BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", command=startDrawCircle)
 BballDrawCircle.place(x=70, y=-5)
-BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=showCalqueCalibration)
+BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=startDrawEight)
 BballDrawEight.place(x=220, y=-5)
 
 # 获取鼠标的位置，转换成像素值。

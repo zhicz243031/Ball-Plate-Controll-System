@@ -40,5 +40,6 @@ def Angle2SerPort(alpha,beta):
     CommondStr = BeginStr+hexAlpha+CommaStr+hexBeta+EndStr
     Sendmessagelong = ser.write(CommondStr)
 
-# initial states, zero angle.
+
 # Angle2SerPort(0,0)
+# ser.close()

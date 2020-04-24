@@ -6,16 +6,12 @@ import imutils  # a python package is used as image processing.
 import time
 import kalman_new
 
-# import kalman
-
 '''
 1. define the lower and upper boundaries of the "green" ball in the HSV color space
 2. initialize the list of tracked points
 3. allow the camera or video file to warm up
 4. vs means video source.
 '''
-greenLower = (29, 86, 6)
-greenUpper = (120, 255, 200)
 
 vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 vs.set(3, 1280)
@@ -38,11 +34,14 @@ time.sleep(.5)
     -- opencv2返回两个值：contours、hierarchy
 
 '''
+greenLower = (29, 86, 6)
+greenUpper = (120, 255, 200)
 while vs.isOpened():
     time.sleep(0.01)
     _, frame = vs.read()
     frame = frame[0:720, 280:1030]
     frame = imutils.resize(frame, width=720)
+
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -54,7 +53,7 @@ while vs.isOpened():
     a = cnts
     cnts = imutils.grab_contours(cnts)
     center = None
-    # print(cnts)
+
     if len(cnts) > 0:
         # find the largest contour in the mask, then use
         # it to compute the minimum enclosing circle and
@@ -64,21 +63,7 @@ while vs.isOpened():
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
-        # kalman_new by vatae
-        a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
-
-        # kalman by wei
-        # kalman.updatePisiton(center_float[0])
-        # kalman.initParameter()
-        # a,b,c,d= kalman.Localization(Acc_Meter=0)
-
-        ## write the data into the .txt to analysis
-        # file_handle = open('1.txt', mode='a')
-        # file_handle.writelines(['\nNo.',str(d),'\tKalman postion:\t',str(a),'\tsensor positon:\t',str(b),'\tDifference:\t',str(c)])
-        # file_handle.close()
-
-        # print(kalman.sensor_x)
-        # print(radius)
+        # a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
         # only proceed if the radius meets a minimum size
         if radius > 10:
             # draw the circle and centroid on the frame,
@@ -87,14 +72,10 @@ while vs.isOpened():
 
     # cv2.imshow('mask_before', mask_before)
     cv2.imshow('frame', frame)
-    # cv2.imshow('mask_before', mask_before)
-    # cv2.imshow('mask_erode', mask_erode)
-    # cv2.imshow('mask', mask)
+    cv2.imshow('mask_before', mask_before)
+    cv2.imshow('mask_erode', mask_erode)
+    cv2.imshow('mask', mask)
     if cv2.waitKey(1) == ord('q'):
         break
-    # delay = 30
-    # if (delay >= 0 & cv2.waitKey(delay) >= 0):
-    #     cv2.waitKey(0)
-
 vs.release()
 cv2.destroyAllWindows()

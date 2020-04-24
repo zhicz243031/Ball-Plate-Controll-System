@@ -1,11 +1,8 @@
 # 这一部分代码是霍夫变换的测试代码
-
-
 import cv2
 import time
 from matplotlib import pyplot as plt
 import numpy as np
-
 
 vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 # vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
@@ -14,7 +11,6 @@ vs.set(4, 720)
 time.sleep(.5)
 
 while vs.isOpened():
-    time.sleep(0.01)
     ret, frame = vs.read()
     frame = frame[0:720, 280:1030]
 
@@ -34,19 +30,10 @@ while vs.isOpened():
 
     else:
         print('nothing.')
-    cv2.imshow('gray', gray)
+
 
     if cv2.waitKey(15) == ord('q'):
         vs.release()
         cv2.destroyAllWindows()
         break
 
-# img = cv2.imread(1, cv2.IMREAD_GRAYSCALE)
-# plt.imshow(img, cmap='gray')
-# circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20, param1=130, param2=30, minRadius=0, maxRadius=0)
-# if circles is not None:
-#     for x, y, r in circles[0]:
-#         c = plt.Circle((x, y), r, fill=False, lw=3, ec='C1')
-#         plt.gca().add_patch(c)
-# plt.gcf().set_size_inches((12, 8))
-# plt.show()

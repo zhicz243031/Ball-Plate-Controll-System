@@ -63,9 +63,9 @@ graphWindow.withdraw()  # hide the graphwindow
 sliderHDefault = 0
 sliderSDefault = 0
 sliderVDefault = 0
-sliderCoefPDefault = 0.035
-sliderCoefIDefault = 0.0
-sliderCoefDDefault = 0.015
+sliderCoefPDefault = 0.010
+sliderCoefIDefault = 0.010
+sliderCoefDDefault = 0.010
 sliderRadiusDefault = 10
 sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
@@ -290,8 +290,9 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
 
-    Ts = time.time() - delivery_time  # sampling time
-    delivery_time = time.time()
+    Ts = 0.1
+    # Ts = time.time() - delivery_time  # sampling time
+    # delivery_time = time.time()
     # print(Ts)
     errorX = refX - ballPosX
     errorY = refY - ballPosY
@@ -299,7 +300,6 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
 
     try:
         derivX = (prevBallPosX - ballPosX) / Ts
-
     except ZeroDivisionError:
         derivX = 0
 
@@ -310,11 +310,15 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     # 使用PD控制器，I这一项完全为零
     Cix = Ki * totalErrorX  # prevIntegX + errorX*Ki*Ts                    #Ki * totalErrorX
     Ciy = Ki * totalErrorY  # prevIntegY + errorY*Ki*Ts                    #Ki * totalErrorX
+    # Cix = prevIntegX + errorX * Ki * Ts
+    # Ciy = prevIntegY + errorY * Ki * Ts
 
     Cdx = Ts / (1 + N * Ts) * (
             N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
     Cdy = Ts / (1 + N * Ts) * (
             N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
+    # Cdx = Kd * ((errorX - prevErrorX)/Ts)
+    # Cdy = Kd * ((errorY - prevErrorY)/Ts)
 
     Ix = Kp * errorX + Cix + Cdx
     Iy = Kp * errorY + Ciy + Cdy
@@ -323,9 +327,9 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
 
     print(Ix, Iy)
     if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
-        SerialandAngle.Angle2SerPort(-Ix / 3.0, -Iy / 3.0)
+        SerialandAngle.Angle2SerPort(-Ix, -Iy)
     else:
-        SerialandAngle.Angle2SerPort(Ix / 3.0, Iy / 3.0)
+        SerialandAngle.Angle2SerPort(Ix, Iy)
 
     prevDerivX = Cdx
     prevDerivY = Cdy
@@ -345,7 +349,6 @@ def endProgam():
 # function that does nothing, may be used for delay
 def donothing():
     pass
-
 
 
 prevX, prevY = 0, 0
@@ -431,7 +434,8 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                # print("卡尔曼滤波位置：", (x, y), "检测位置:", (type(b), e), "差值：", ((a - d), (b - e)))
+                print("卡尔曼滤波位置：", (int(a), int(d)), "检测位置:", (int(b), int(e)), "差值：",
+                      ((int(a) - int(b)), (int(d) - int(e))))
 
             PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
         else:

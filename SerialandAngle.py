@@ -42,4 +42,5 @@ def Angle2SerPort(alpha,beta):
 
 
 # Angle2SerPort(0,0)
+# DetectSerPort()
 # ser.close()

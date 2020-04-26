@@ -65,9 +65,9 @@ graphWindow.withdraw()  # hide the graphwindow
 sliderHDefault = 0
 sliderSDefault = 0
 sliderVDefault = 0
-sliderCoefPDefault = 0.010
-sliderCoefIDefault = 0.010
-sliderCoefDDefault = 0.010
+sliderCoefPDefault = 0.032
+sliderCoefIDefault = 0
+sliderCoefDDefault = 0.020
 sliderRadiusDefault = 10
 sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
@@ -190,8 +190,8 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
 
 
 # 用鼠标设定小球的运动位置，为其设定参考点
-refY = 240  # reference refinate Y
-refX = 240  # reference refinate X
+refY = 190  # reference refinate Y
+refX = 190  # reference refinate X
 
 
 def setRefWithMouse(mousePosition):
@@ -292,9 +292,9 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
 
-    Ts = 0.1
-    # Ts = time.time() - delivery_time  # sampling time
-    # delivery_time = time.time()
+    # Ts = 0.1
+    Ts = time.time() - delivery_time  # sampling time
+    delivery_time = time.time()
     # print(Ts)
     errorX = refX - ballPosX
     errorY = refY - ballPosY
@@ -344,7 +344,7 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
 
 # 退出interface
 def endProgam():
-    # SerialandAngle.ser.close()
+    SerialandAngle.ser.close()
     controllerWindow.destroy()
 
 
@@ -371,9 +371,9 @@ def main():
     # print(Ts)
 
     _, frame = vs.read()
-    frame = frame[20:470, 110:530]
-    # frame = frame[10:700, 310:1010]
-    # frame = frame[40:670, 340:980]
+    # frame = frame[20:470, 110:530]
+    frame = frame[70:420, 160:480]
+
     # frame = imutils.resize(frame, width=600) # 视频验证窗口
     # frame = imutils.resize(frame, width=720)
     # print(camHeight,((camWidth - camHeight) / 2),(camWidth - ((camWidth - camHeight) / 2)))
@@ -397,8 +397,8 @@ def main():
     # 银质绿面小球
     greenLower = (43 - sliderLH.get(), 30 - sliderLS.get(), 140 - sliderLV.get())
     greenUpper = (105 + sliderUH.get(), 160 + sliderUS.get(), 255 + sliderUV.get())
-    # 绿色弹力球
-    # greenLower = (25 - sliderLH.get(), 28 - sliderLS.get(), 250 - sliderLV.get())
+    # 黄色小球
+    # greenLower = (25 - sliderLH.get(), 0 - sliderLS.get(), 250 - sliderLV.get())
     # greenUpper = (35 + sliderUH.get(), 60 + sliderUS.get(), 255 + sliderUV.get())
 
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
@@ -443,8 +443,8 @@ def main():
         else:
             totalErrorX, totalErrorY = 0, 0
     else:
-        lostballcount = lostballcount + 1
-        print('lost ball:', lostballcount)
+        # lostballcount = lostballcount + 1
+        # print('lost ball:', lostballcount)
         SerialandAngle.Angle2SerPort(0, 0)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:

@@ -3,7 +3,7 @@ import time
 from struct import pack,unpack
 
 # open the serial port COM4
-ser = serial.Serial(port='COM3', baudrate=115200)
+ser = serial.Serial(port="/dev/ttyUSB0", baudrate=115200)
 
 # Test the serial port
 def DetectSerPort():
@@ -41,6 +41,10 @@ def Angle2SerPort(alpha,beta):
     Sendmessagelong = ser.write(CommondStr)
 
 
+<<<<<<< HEAD
+Angle2SerPort(0,0)
+=======
 # Angle2SerPort(0,0)
+>>>>>>> bb337013f10d194c32ca8a1dbb52927efc983b17
 # DetectSerPort()
 # ser.close()

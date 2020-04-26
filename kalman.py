@@ -3,9 +3,10 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 # sensor_x = 3.56562
-sensor_y = 3.56562
+# sensor_y = 3.56562
 PixelDist_Meter_Ratio = 10.0
 SamPer_sec = 0.1
 Acc_Meter = 0
@@ -20,9 +21,10 @@ def EstiFromOutputStates():
     global EsticurrStates,CurrentStates
     EsticurrStates = np.array([[CurrentStates[0]],[CurrentStates[1]],[1]], np.float32)
     # print(EsticurrStates)
-def GetAcceleration_Pixel(Acc_Meter):
+def GetAcceleration_Pixel(angle):
     global accelaration_pixel
-    accelaration_pixel = Acc_Meter * PixelDist_Meter_Ratio
+        # accelaration_pixel = Acc_Meter * PixelDist_Meter_Ratio
+    accelaration_pixel = math.cos(angle)*9.8
 
 def Velocity_Calculation(v_last,pos_cur,pos_last):
     # print(v_last,pos_cur,pos_last)
@@ -31,10 +33,13 @@ def Velocity_Calculation(v_last,pos_cur,pos_last):
 def SystemMatrixUpdate():
     global SystemMatrix
     SystemMatrix = np.array([[1,SamPer_sec,0.5*accelaration_pixel*pow(SamPer_sec,2)],[0,1,accelaration_pixel*SamPer_sec],[0,0,1]], np.float32)
-
-def updatePisiton(current_x):
+sensor_x=0
+def updatePisiton(current_x, angle):
     global sensor_x
     sensor_x = current_x
+    kalmanpos, kalmanvec = Localization(angle)
+
+    return kalmanpos,kalmanvec
 
 def initParameter():
     global EsticurrStates, P_k_matrix, R_0_matrix, Q_0_matrix
@@ -47,10 +52,10 @@ def initParameter():
     outputstateFromesti()
     EstiFromOutputStates()
 
-def Localization(Acc_Meter):
+def Localization(angle):
     global Temp,Temp_State,EstiCurrStates, P_k_Matrix,count
 
-    GetAcceleration_Pixel(Acc_Meter)
+    GetAcceleration_Pixel(angle)
     SystemMatrixUpdate()
     EstiFromOutputStates()
     Temp =np.zeros((3, 3), np.float32)
@@ -64,12 +69,8 @@ def Localization(Acc_Meter):
 
     outputstateFromesti()
     # print("卡尔曼滤波位置：",EstiCurrStates[0][0],"检测位置:",sensor_x,"差值：",EstiCurrStates[0][0] - sensor_x)
-    count = count +1
-    return EstiCurrStates[0][0],sensor_x,(EstiCurrStates[0][0] - sensor_x),count
+    # count = count +1
+    return EstiCurrStates[0][0],EstiCurrStates[1][1]
 
 
-    # print(count)
-# for num in range(1,50):
-#     initParameter()
-#     Localization(Acc_Meter)
-#     print(EstiCurrStates[0][0],sensor_x)
+initParameter()

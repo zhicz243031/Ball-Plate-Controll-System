@@ -7,7 +7,8 @@ import time
 import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
-import kalman_new
+# import kalman_new
+import kalman
 import SerialandAngle
 from math import *
 
@@ -278,15 +279,15 @@ prevIntegY = 0
 delivery_time = 0
 prevErrorX = 0
 prevErrorY = 0
+Ix, Iy = 0, 0
 
-
-def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
+def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx, vecy):
     global totalErrorX, totalErrorY
     global alpha, beta, prevAlpha, prevBeta
     global startBalanceBall, arduinoIsConnected
     global Ts, delivery_time, N
     global prevDerivX, prevDerivY, prevIntegX, prevIntegY
-    global prevErrorX, prevErrorY
+    global prevErrorX, prevErrorY,Ix, Iy
 
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
@@ -300,27 +301,27 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     errorY = refY - ballPosY
     # print(errorX,errorY)
 
-    try:
-        derivX = (prevBallPosX - ballPosX) / Ts
-    except ZeroDivisionError:
-        derivX = 0
+    # try:
+    #     derivX = (prevBallPosX - ballPosX) / Ts
+    # except ZeroDivisionError:
+    #     derivX = 0
 
-    try:
-        derivY = (prevBallPosY - ballPosY) / Ts
-    except ZeroDivisionError:
-        derivY = 0
+    # try:
+    #     derivY = (prevBallPosY - ballPosY) / Ts
+    # except ZeroDivisionError:
+    #     derivY = 0
     # 使用PD控制器，I这一项完全为零
     Cix = Ki * totalErrorX  # prevIntegX + errorX*Ki*Ts                    #Ki * totalErrorX
     Ciy = Ki * totalErrorY  # prevIntegY + errorY*Ki*Ts                    #Ki * totalErrorX
     # Cix = prevIntegX + errorX * Ki * Ts
     # Ciy = prevIntegY + errorY * Ki * Ts
 
-    Cdx = Ts / (1 + N * Ts) * (
-            N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
-    Cdy = Ts / (1 + N * Ts) * (
-            N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
-    # Cdx = Kd * ((errorX - prevErrorX)/Ts)
-    # Cdy = Kd * ((errorY - prevErrorY)/Ts)
+    # Cdx = Ts / (1 + N * Ts) * (
+    #         N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
+    # Cdy = Ts / (1 + N * Ts) * (
+    #         N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
+    Cdx = Kd * ((errorX - prevErrorX)/Ts)
+    Cdy = Kd * ((errorY - prevErrorY)/Ts)
 
     Ix = Kp * errorX + Cix + Cdx
     Iy = Kp * errorY + Ciy + Cdy
@@ -340,6 +341,8 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     prevErrorX = errorX
     prevErrorY = errorY
     # print(totalErrorX)
+
+    return Ix, Iy
 
 
 # 退出interface
@@ -361,7 +364,7 @@ def main():
     global H, S, V
     global getPixelColor
     global refX, refY, totalErrorX, totalErrorY
-    global x, y, alpha, beta
+    global x, y, alpha, beta,Ix, Iy
     global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
     global camWidth, camHeight, lostballcount
     global timeInterval, start_time, delivery_time11
@@ -434,12 +437,13 @@ def main():
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
             if useKalmanBool == False:
-                a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
-                d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                # print("卡尔曼滤波位置：", (int(a), int(d)), "检测位置:", (int(b), int(e)), "差值：",
-                #       ((int(a) - int(b)), (int(d) - int(e))))
+                # a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
+                # d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
+                a, b = kalman.updatePisiton(x, Ix)
+                d, e = kalman.updatePisiton(y, Iy)
+                # print(a,d)
 
-            PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
+                PIDcontrol(int(a), int(d), prevX, prevY, refX, refY, b, e)
         else:
             totalErrorX, totalErrorY = 0, 0
     else:

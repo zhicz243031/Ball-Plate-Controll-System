@@ -8,14 +8,16 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
-import SerialandAngle
+# import SerialandAngle
 from math import *
 
 # 初始化，平衡平板
-SerialandAngle.Angle2SerPort(0, 0)
+# SerialandAngle.Angle2SerPort(0, 0)
 
-# vs = cv2.VideoCapture('C:/Users/50578/working/Ball-Tracking/BlueBal.avi')
-vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+# vs = cv2.VideoCapture('BlueBal.avi')
+vs = cv2.VideoCapture('~/working/Ball-Tracking/BlueBal.avi')
+# vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+vs = cv2.VideoCapture(1)
 vs.set(3, 1280)
 vs.set(4, 720)
 print("Open camera succeed.")
@@ -355,8 +357,6 @@ prevX, prevY = 0, 0
 prevRefX, prevRefY = 0, 0
 start_time = 0
 delivery_time11 = 0
-
-
 def main():
     global H, S, V
     global getPixelColor
@@ -434,16 +434,16 @@ def main():
             if useKalmanBool == False:
                 a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
                 d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                print("卡尔曼滤波位置：", (int(a), int(d)), "检测位置:", (int(b), int(e)), "差值：",
-                      ((int(a) - int(b)), (int(d) - int(e))))
+                # print("卡尔曼滤波位置：", (int(a), int(d)), "检测位置:", (int(b), int(e)), "差值：",
+                #       ((int(a) - int(b)), (int(d) - int(e))))
 
-            PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
+            # PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
         else:
             totalErrorX, totalErrorY = 0, 0
-    else:
+    # else:
         # lostballcount = lostballcount + 1
         # print('lost ball:', lostballcount)
-        SerialandAngle.Angle2SerPort(0, 0)
+        # SerialandAngle.Angle2SerPort(0, 0)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB

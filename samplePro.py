@@ -1,12 +1,10 @@
 import cv2
 import imutils
-import time
 
-vs = cv2.VideoCapture(0)
-vs.set(3, 1280)
-vs.set(4, 720)
-print("Open camera succeed.")
-
+# vs = cv2.VideoCapture(2)
+# vs.set(3, 1280)
+# vs.set(4, 720)
+# print("Open camera succeed.")
 
 def ImgProcess(vs, refX, refY):
     ret, frame = vs.read()
@@ -31,8 +29,8 @@ def ImgProcess(vs, refX, refY):
     if len(cnts) > 0:
         c = max(cnts, key=cv2.contourArea)
         ((x, y), radius) = cv2.minEnclosingCircle(c)
-    #     M = cv2.moments(c)
-    #     center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+        # M = cv2.moments(c)
+        # center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
         # if radius > 10:
         #     cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
@@ -40,24 +38,18 @@ def ImgProcess(vs, refX, refY):
         #     cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
         #     cv2.circle(frame, center, 5, (0, 0, 255), -1)
 
-    cv2.imshow('frame', frame)
-    # return x, y, radius
+    # cv2.imshow('frame', frame)
+    return x, y, radius
 
-# count =1
-lasttime = 0
-while (1):
 
-    ImgProcess(vs, 360, 360)
-
-    print(time.clock()-lasttime)
-    lasttime = time.clock()
-    # count=count+1
-    # print(count)
-    # print(a,b,c)
-
-    k = cv2.waitKey(60) & 0xff
-    if k == 27:
-        break
-
-cv2.destroyAllWindows()
-vs.release()
+# while (1):
+#
+#     a,b,c=ImgProcess(vs, 360, 360)
+#     print(a,b,c)
+#
+#     k = cv2.waitKey(60) & 0xff
+#     if k == 27:
+#         break
+#
+# cv2.destroyAllWindows()
+# vs.release()

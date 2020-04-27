@@ -41,6 +41,10 @@ def Angle2SerPort(alpha,beta):
     Sendmessagelong = ser.write(CommondStr)
 
 
+<<<<<<< HEAD
 Angle2SerPort(0,0)
+=======
+# Angle2SerPort(0,0)
+>>>>>>> bb337013f10d194c32ca8a1dbb52927efc983b17
 # DetectSerPort()
 # ser.close()

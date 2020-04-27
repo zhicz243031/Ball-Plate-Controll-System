@@ -8,24 +8,24 @@ import tkinter as tk  # Python GUI
 import tkinter.messagebox
 from PIL import Image, ImageTk  # Python Imaging Library
 import kalman_new
-# import SerialandAngle
+import SerialandAngle
 from math import *
 
 # 初始化，平衡平板
-# SerialandAngle.Angle2SerPort(0, 0)
+SerialandAngle.Angle2SerPort(0, 0)
 
 # vs = cv2.VideoCapture('BlueBal.avi')
-vs = cv2.VideoCapture('~/working/Ball-Tracking/BlueBal.avi')
-# vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
-vs = cv2.VideoCapture(1)
-vs.set(3, 1280)
-vs.set(4, 720)
+# vs = cv2.VideoCapture('~/working/Ball-Tracking/BlueBal.avi')
+vs = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+# vs = cv2.VideoCapture(1)
+vs.set(3, 640)
+vs.set(4, 480)
 print("Open camera succeed.")
 time.sleep(.2)
 
 getPixelColor = False  # flag to get the pixel color of the ball when needed
-camHeight = 1280
-camWidth = 720
+camHeight = 640
+camWidth = 480
 H, S, V = 0, 0, 0  # the color properties of the Pixel to track
 mouseX, mouseY = 0, 0  # declare variables to capture mouse position for color tracking
 lostballcount = 0
@@ -65,9 +65,9 @@ graphWindow.withdraw()  # hide the graphwindow
 sliderHDefault = 0
 sliderSDefault = 0
 sliderVDefault = 0
-sliderCoefPDefault = 0.010
-sliderCoefIDefault = 0.010
-sliderCoefDDefault = 0.010
+sliderCoefPDefault = 0.032
+sliderCoefIDefault = 0
+sliderCoefDDefault = 0.020
 sliderRadiusDefault = 10
 sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
@@ -190,8 +190,8 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
 
 
 # 用鼠标设定小球的运动位置，为其设定参考点
-refY = 360  # reference refinate Y
-refX = 360  # reference refinate X
+refY = 190  # reference refinate Y
+refX = 190  # reference refinate X
 
 
 def setRefWithMouse(mousePosition):
@@ -292,9 +292,9 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY):
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
 
-    Ts = 0.1
-    # Ts = time.time() - delivery_time  # sampling time
-    # delivery_time = time.time()
+    # Ts = 0.1
+    Ts = time.time() - delivery_time  # sampling time
+    delivery_time = time.time()
     # print(Ts)
     errorX = refX - ballPosX
     errorY = refY - ballPosY
@@ -371,12 +371,14 @@ def main():
     # print(Ts)
 
     _, frame = vs.read()
-    # frame = frame[0:720, 280:1030]
-    # frame = frame[10:700, 310:1010]
-    frame = frame[40:670, 340:980]
-    # frame = imutils.resize(frame, width=600) # 视频验证窗口
-    frame = imutils.resize(frame, width=720)
+    # frame = frame[20:470, 110:530]
+    frame = frame[70:420, 160:480]
 
+    # frame = imutils.resize(frame, width=600) # 视频验证窗口
+    # frame = imutils.resize(frame, width=720)
+    # print(camHeight,((camWidth - camHeight) / 2),(camWidth - ((camWidth - camHeight) / 2)))
+    # frame = frame[0:int(camHeight), int((camWidth - camHeight) / 2):int(camWidth - ((camWidth - camHeight) / 2))]  # [Y1:Y2,X1:X2]
+    # frame = frame[0:camHeight, int((camWidth - camHeight) / 2):int(camWidth - ((camWidth - camHeight) / 2))]  # [Y1:Y2,X1:X2]
     blurred = cv2.GaussianBlur(frame, (11, 11), 0)
     hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
 
@@ -395,8 +397,8 @@ def main():
     # 银质绿面小球
     greenLower = (43 - sliderLH.get(), 30 - sliderLS.get(), 140 - sliderLV.get())
     greenUpper = (105 + sliderUH.get(), 160 + sliderUS.get(), 255 + sliderUV.get())
-    # 绿色弹力球
-    # greenLower = (25 - sliderLH.get(), 28 - sliderLS.get(), 250 - sliderLV.get())
+    # 黄色小球
+    # greenLower = (25 - sliderLH.get(), 0 - sliderLS.get(), 250 - sliderLV.get())
     # greenUpper = (35 + sliderUH.get(), 60 + sliderUS.get(), 255 + sliderUV.get())
 
     mask_before = cv2.inRange(hsv, greenLower, greenUpper)
@@ -437,13 +439,13 @@ def main():
                 # print("卡尔曼滤波位置：", (int(a), int(d)), "检测位置:", (int(b), int(e)), "差值：",
                 #       ((int(a) - int(b)), (int(d) - int(e))))
 
-            # PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
+            PIDcontrol(int(a), int(d), prevX, prevY, refX, refY)
         else:
             totalErrorX, totalErrorY = 0, 0
-    # else:
+    else:
         # lostballcount = lostballcount + 1
         # print('lost ball:', lostballcount)
-        # SerialandAngle.Angle2SerPort(0, 0)
+        SerialandAngle.Angle2SerPort(0, 0)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB

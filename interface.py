@@ -1,13 +1,12 @@
 from imutils.video import VideoStream
 import numpy as np
-import argparse
 import cv2
 import imutils
-import time
 import tkinter as tk  # Python GUI
 import tkinter.messagebox
+import matplotlib.pyplot as plt
 from PIL import Image, ImageTk  # Python Imaging Library
-# import kalman_new
+import time
 import kalman
 import SerialandAngle
 from math import *
@@ -66,9 +65,9 @@ graphWindow.withdraw()  # hide the graphwindow
 sliderHDefault = 0
 sliderSDefault = 0
 sliderVDefault = 0
-sliderCoefPDefault = 0.032
+sliderCoefPDefault = 0.028
 sliderCoefIDefault = 0
-sliderCoefDDefault = 0.020
+sliderCoefDDefault = 0.025
 sliderRadiusDefault = 10
 sliderSpeedDefault = 10
 sliderRefXDefault = camWidth / 2
@@ -181,6 +180,10 @@ def showCalqueCalibration():
     global showCalqueCalibrationBool
     showCalqueCalibrationBool = not showCalqueCalibrationBool
 
+def setRefWithButton():  # set refX and refY based on the mousePosition, mousePosition is the realtime position of the mouse not a saved variable
+    global refX, refY
+    refX, refY = sliderRefX.get(), sliderRefY.get()
+    resetPID()
 
 # 取色笔，可以获得像素点的HSV的值
 def getMouseClickPosition(mousePosition):  # get mouse click position
@@ -225,8 +228,6 @@ def showCameraFrameWindow():  # function to toggle the showVideoWindow and chang
 
 # 控制是否显示建模图。建模图显示了给定与输入输出之间的实时关系。
 showGraph = False  # bool for Graph window
-
-
 def showGraphWindow():  # function that toggles the Graph window and update the show graph button
     global showGraph, showVideoWindow
     global BShowGraph
@@ -242,6 +243,63 @@ def showGraphWindow():  # function that toggles the Graph window and update the 
         showGraph = False
         BShowGraph["text"] = "Show Plot"
 
+t = 500  # time variable for the plotting and initialize at 480 for a good visualization
+Ts = 0
+logBool = 0
+logfile = open("log.txt", "w")
+
+# def startLog():
+#     global logBool
+#     logfile = open("log.txt", "w")  # create file
+#     firstline = "Time|PosX|RefX\n"
+#     logfile.write(firstline)
+#     logBool = 1
+
+def paintGraph():  # function to plot in realtime the graphWindow
+    global t, refX, refY, x, y, prevX, Ts, prevY, alpha, prevAlpha
+    global showGraphPositionX, showGraphPositionY, showGraphAlpha, logBool, logfile
+    if showGraph == True:
+        t += Ts * 100
+        graphWindow.deiconify() # 显示画面
+        if showGraphPositionX.get() == 1:
+            graphCanvas.create_line(t - Ts * 100, prevX, t, x, fill="#b20000", width=2)
+            graphCanvas.create_line(t - Ts * 100, prevRefX, t, refX, fill="#ff7777", width=2)
+
+        if logBool == 1:
+            log = str(round(t, 2)) + " " + str(round(x, 2)) + " " + str(refX) + "\n"
+            logfile.write(log)
+
+        if showGraphPositionY.get() == 1:
+            graphCanvas.create_line(t - Ts * 100, prevY, t, y, fill="#0069b5", width=2)
+            graphCanvas.create_line(t - Ts * 100, prevRefY, t, refY, fill="#6f91f7", width=2)
+        if showGraphAlpha.get() == 1:
+            graphCanvas.create_line(t - Ts * 100, 240 - prevAlpha * 3, t, 240 - alpha * 3, fill="#8f0caf", width=2)
+        if t >= 500:
+            t = 0
+            graphCanvas.delete("all")
+            # if logBool == 1:
+            #     logBool = 0
+            #     logfile.close()
+            # graphCanvas.create_line(0, 240, 500, 240, fill="black", width=1)
+            # graphCanvas.create_line(250, 0, 250, 500, fill="black", width=1)
+            for i in range(4):
+                graphCanvas.create_line(0, 120 * (i + 1), 500, 120 * (i + 1), fill="black", width=1)
+                graphCanvas.create_line(100 * (i + 1), 0, 100 * (i + 1), 480, fill="black", width=1)
+
+            graphCanvas.create_line(3, 3, 500, 3, fill="black", width=3)
+            graphCanvas.create_line(3, 500, 500, 500, fill="black", width=3)
+            graphCanvas.create_line(3, 3, 3, 500, fill="black", width=3)
+            graphCanvas.create_line(500, 3, 500, 500, fill="black", width=3)
+            graphCanvas.create_line(550, 32, 740, 32, fill="#b20000", width=5)
+            graphCanvas.create_line(550, 53, 740, 53, fill="#0069b5", width=5)
+            graphCanvas.create_line(550, 73, 740, 73, fill="#8f0caf", width=5)
+            # if showGraphPositionX.get() == 1:
+            #   graphCanvas.create_line(3, refX, 480, refX, fill="#ff7777", width=2)
+            # if showGraphPositionY.get() == 1:
+            #   graphCanvas.create_line(3, refY, 480, refY, fill="#6f91f7", width=2)
+
+    else:
+        graphWindow.withdraw()
 
 def refreshGraph():  # function that reset the time variable to 480 if the graph is full
     global t
@@ -293,13 +351,11 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx,
     Ki = sliderCoefI.get()
     Kd = sliderCoefD.get()
 
-    # Ts = 0.1
     Ts = time.time() - delivery_time  # sampling time
     delivery_time = time.time()
-    # print(Ts)
+
     errorX = refX - ballPosX
     errorY = refY - ballPosY
-    # print(errorX,errorY)
 
     # try:
     #     derivX = (prevBallPosX - ballPosX) / Ts
@@ -316,23 +372,23 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx,
     # Cix = prevIntegX + errorX * Ki * Ts
     # Ciy = prevIntegY + errorY * Ki * Ts
 
-    # Cdx = Ts / (1 + N * Ts) * (
-    #         N * Kd * derivX + prevDerivX / Ts)  # (Kd*N*(errorX-prevErrorX)+prevDerivX)/(1+N*Ts)# #Kd * ((errorX - prevErrorX)/Ts)
-    # Cdy = Ts / (1 + N * Ts) * (
-    #         N * Kd * derivY + prevDerivY / Ts)  # (Kd*N*(errorY-prevErrorY)+prevDerivY)/(1+N*Ts) # #Kd * ((errorY - prevErrorY)/Ts)
     Cdx = Kd * ((errorX - prevErrorX)/Ts)
     Cdy = Kd * ((errorY - prevErrorY)/Ts)
 
     Ix = Kp * errorX + Cix + Cdx
     Iy = Kp * errorY + Ciy + Cdy
-    Ix = round(Ix, 1)
-    Iy = round(Iy, 1)
+    # Ix = round(Ix, 1) - 0.4
+    # Iy = round(Iy, 1) - 0.2
+    # Ix = round(Ix, 1)
+    # Iy = round(Iy, 1)
 
     print(Ix, Iy)
-    if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
-        SerialandAngle.Angle2SerPort(-Ix, -Iy)
-    else:
-        SerialandAngle.Angle2SerPort(Ix, Iy)
+    # if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
+    #     SerialandAngle.Angle2SerPort(-Ix - 0.2, -Iy - 0.1)
+    # else:
+    #     SerialandAngle.Angle2SerPort(Ix - 0.2, Iy - 0.1)
+
+
 
     prevDerivX = Cdx
     prevDerivY = Cdy
@@ -348,7 +404,11 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx,
 # 退出interface
 def endProgam():
     SerialandAngle.ser.close()
+    # print(positionlist)
+    # print(timelist)
     controllerWindow.destroy()
+    # plt.plot(timelist,positionlist)
+    # plt.show()
 
 
 # function that does nothing, may be used for delay
@@ -356,6 +416,8 @@ def donothing():
     pass
 
 
+positionlist = []
+timelist=[]
 prevX, prevY = 0, 0
 prevRefX, prevRefY = 0, 0
 start_time = 0
@@ -366,7 +428,7 @@ def main():
     global refX, refY, totalErrorX, totalErrorY
     global x, y, alpha, beta,Ix, Iy
     global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
-    global camWidth, camHeight, lostballcount
+    global camWidth, camHeight, lostballcount,positionlist,timelist
     global timeInterval, start_time, delivery_time11
 
     # Ts = time.time() - delivery_time11  # sampling time
@@ -431,6 +493,7 @@ def main():
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
 
+
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -441,15 +504,18 @@ def main():
                 # d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
                 a, b = kalman.updatePisiton(x, Ix)
                 d, e = kalman.updatePisiton(y, Iy)
-                # print(a,d)
+
+                # timelist.append(time.process_time())
+                # positionlist.append(a)
+
 
                 PIDcontrol(int(a), int(d), prevX, prevY, refX, refY, b, e)
         else:
             totalErrorX, totalErrorY = 0, 0
-    else:
+    # else:
         # lostballcount = lostballcount + 1
         # print('lost ball:', lostballcount)
-        SerialandAngle.Angle2SerPort(0, 0)
+        # SerialandAngle.Angle2SerPort(-0.1, -0.1)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB
@@ -468,7 +534,8 @@ def main():
     # 延迟20ms之后，进入主程序，从而形成循环。
     lmain.after(20, main)
     # 查询是否要画圆和椭圆
-    drawWithBall()
+    # drawWithBall()
+    paintGraph()
     try:
         prevX, prevY = int(x), int(y)
     except:
@@ -549,6 +616,11 @@ Bkalman.pack()
       **
 *************
 '''
+
+
+
+
+
 FramePIDCoef = tk.LabelFrame(controllerWindow, text="PID coefficients")
 FramePIDCoef.place(x=420, y=20, width=380)
 BShowGraph = tk.Button(FramePIDCoef, text="Plot on Graph", command=showGraphWindow)
@@ -590,6 +662,31 @@ BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", c
 BballDrawCircle.place(x=70, y=-5)
 BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=startDrawEight)
 BballDrawEight.place(x=220, y=-5)
+
+
+showGraphPositionX = tk.IntVar()
+showGraphPositionX.set(1)
+CheckbuttonPositionX = tk.Checkbutton(graphWindow, text="X Position", variable=showGraphPositionX, command=refreshGraph)
+CheckbuttonPositionX.place(x=520, y=20)
+showGraphPositionY = tk.IntVar()
+showGraphPositionY.set(1)
+CheckbuttonPositionY = tk.Checkbutton(graphWindow, text="Y Position", variable=showGraphPositionY, command=refreshGraph)
+CheckbuttonPositionY.place(x=520, y=40)
+showGraphAlpha = tk.IntVar()
+CheckbuttonAlpha = tk.Checkbutton(graphWindow, text="Plate Inclination", variable=showGraphAlpha, command=refreshGraph)
+CheckbuttonAlpha.place(x=520, y=60)
+sliderRefX = tk.Scale(graphWindow, from_=0, to=480, orient="horizontal", label="RefX", length=150,
+                      tickinterval=100)
+sliderRefX.set(sliderRefXDefault)
+sliderRefX.place(x=520, y=100)
+sliderRefY = tk.Scale(graphWindow, from_=0, to=480, orient="horizontal", label="RefY", length=150,
+                      tickinterval=100)
+sliderRefY.set(sliderRefYDefault)
+sliderRefY.place(x=520, y=200)
+BsetReference = tk.Button(graphWindow, text="Set Ref", command=setRefWithButton)
+BsetReference.place(x=520, y=350)
+# Blog = tk.Button(graphWindow, text="Write Log", command=startLog)
+# Blog.place(x=520, y=370)
 
 # 获取鼠标的位置，转换成像素值。
 # https://www.cnblogs.com/progor/p/8505599.html

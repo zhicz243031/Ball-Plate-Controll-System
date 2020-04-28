@@ -43,6 +43,12 @@ def Angle2SerPort(alpha,beta):
 
 
 # (-0.2,-0.1)是一个理想的平衡点
+# while(1):
+#     Angle2SerPort(-0.3, -0.1)
+#     time.sleep(0.4)
+#     Angle2SerPort(-0.1, -0.1)
+#     time.sleep(0.4)
+#
 Angle2SerPort(-0.2,-0.1)
 # Angle2SerPort(0.2,0.1)
 # DetectSerPort()

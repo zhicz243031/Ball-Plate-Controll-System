@@ -87,6 +87,7 @@ def Localization(angle):
     outputstateFromesti()
     # print("卡尔曼滤波位置：",EstiCurrStates[0][0],"检测位置:",sensor_x,"差值：",EstiCurrStates[0][0] - sensor_x)
     # count = count +1
+    print('kalman vec:', EstiCurrStates[1][1])
     return EstiCurrStates[0][0], EstiCurrStates[1][1]
 
 

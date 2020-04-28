@@ -112,7 +112,7 @@ def startDrawCircle():
         BballDrawCircle["text"] = "Disable Circle Trajectory"
     else:
         drawCircleBool = False
-        refX, refY = 240, 240
+        refX, refY = 190, 190
         # sliderCoefP.set(sliderCoefPDefault)
         BballDrawCircle["text"] = "Enable Circle Trajectory"
     resetPID()
@@ -180,10 +180,12 @@ def showCalqueCalibration():
     global showCalqueCalibrationBool
     showCalqueCalibrationBool = not showCalqueCalibrationBool
 
+
 def setRefWithButton():  # set refX and refY based on the mousePosition, mousePosition is the realtime position of the mouse not a saved variable
     global refX, refY
     refX, refY = sliderRefX.get(), sliderRefY.get()
     resetPID()
+
 
 # 取色笔，可以获得像素点的HSV的值
 def getMouseClickPosition(mousePosition):  # get mouse click position
@@ -194,8 +196,8 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
 
 
 # 用鼠标设定小球的运动位置，为其设定参考点
-refY = 190  # reference refinate Y
-refX = 190  # reference refinate X
+refX = 170  # reference refinate X
+refY = 180  # reference refinate Y
 
 
 def setRefWithMouse(mousePosition):
@@ -228,6 +230,8 @@ def showCameraFrameWindow():  # function to toggle the showVideoWindow and chang
 
 # 控制是否显示建模图。建模图显示了给定与输入输出之间的实时关系。
 showGraph = False  # bool for Graph window
+
+
 def showGraphWindow():  # function that toggles the Graph window and update the show graph button
     global showGraph, showVideoWindow
     global BShowGraph
@@ -243,10 +247,12 @@ def showGraphWindow():  # function that toggles the Graph window and update the 
         showGraph = False
         BShowGraph["text"] = "Show Plot"
 
+
 t = 500  # time variable for the plotting and initialize at 480 for a good visualization
 Ts = 0
 logBool = 0
 logfile = open("log.txt", "w")
+
 
 # def startLog():
 #     global logBool
@@ -258,20 +264,21 @@ logfile = open("log.txt", "w")
 def paintGraph():  # function to plot in realtime the graphWindow
     global t, refX, refY, x, y, prevX, Ts, prevY, alpha, prevAlpha
     global showGraphPositionX, showGraphPositionY, showGraphAlpha, logBool, logfile
+    global v_lastx, v_lasty, v_curx, v_cury
     if showGraph == True:
         t += Ts * 100
-        graphWindow.deiconify() # 显示画面
+        graphWindow.deiconify()  # 显示画面
         if showGraphPositionX.get() == 1:
-            graphCanvas.create_line(t - Ts * 100, prevX, t, x, fill="#b20000", width=2)
-            graphCanvas.create_line(t - Ts * 100, prevRefX, t, refX, fill="#ff7777", width=2)
+            graphCanvas.create_line(t - Ts * 100, v_lastx, t, v_curx, fill="#b20000", width=2)
+            # graphCanvas.create_line(t - Ts * 100, prevRefX, t, refX, fill="#ff7777", width=2)
 
         if logBool == 1:
             log = str(round(t, 2)) + " " + str(round(x, 2)) + " " + str(refX) + "\n"
             logfile.write(log)
 
         if showGraphPositionY.get() == 1:
-            graphCanvas.create_line(t - Ts * 100, prevY, t, y, fill="#0069b5", width=2)
-            graphCanvas.create_line(t - Ts * 100, prevRefY, t, refY, fill="#6f91f7", width=2)
+            graphCanvas.create_line(t - Ts * 100, v_lasty, t, v_cury, fill="#0069b5", width=2)
+            # graphCanvas.create_line(t - Ts * 100, prevRefY, t, refY, fill="#6f91f7", width=2)
         if showGraphAlpha.get() == 1:
             graphCanvas.create_line(t - Ts * 100, 240 - prevAlpha * 3, t, 240 - alpha * 3, fill="#8f0caf", width=2)
         if t >= 500:
@@ -300,6 +307,7 @@ def paintGraph():  # function to plot in realtime the graphWindow
 
     else:
         graphWindow.withdraw()
+
 
 def refreshGraph():  # function that reset the time variable to 480 if the graph is full
     global t
@@ -337,15 +345,21 @@ prevIntegY = 0
 delivery_time = 0
 prevErrorX = 0
 prevErrorY = 0
+prevBallPosX, prevBallPosY = 0, 0
 Ix, Iy = 0, 0
+v_lastx = 0
+v_lasty = 0
 
-def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx, vecy):
+vec_lastx= 0
+vec_lasty= 0
+
+def PIDcontrol(ballPosX, ballPosY, refX, refY):
     global totalErrorX, totalErrorY
     global alpha, beta, prevAlpha, prevBeta
     global startBalanceBall, arduinoIsConnected
     global Ts, delivery_time, N
     global prevDerivX, prevDerivY, prevIntegX, prevIntegY
-    global prevErrorX, prevErrorY,Ix, Iy
+    global prevErrorX, prevErrorY, Ix, Iy, prevY, prevX,vec_lastx,vec_lasty
 
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
@@ -356,39 +370,37 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx,
 
     errorX = refX - ballPosX
     errorY = refY - ballPosY
+    # print('curPosx:', ballPosX, 'curPosy:',ballPosY)
 
-    # try:
-    #     derivX = (prevBallPosX - ballPosX) / Ts
-    # except ZeroDivisionError:
-    #     derivX = 0
-
-    # try:
-    #     derivY = (prevBallPosY - ballPosY) / Ts
-    # except ZeroDivisionError:
-    #     derivY = 0
     # 使用PD控制器，I这一项完全为零
     Cix = Ki * totalErrorX  # prevIntegX + errorX*Ki*Ts                    #Ki * totalErrorX
     Ciy = Ki * totalErrorY  # prevIntegY + errorY*Ki*Ts                    #Ki * totalErrorX
-    # Cix = prevIntegX + errorX * Ki * Ts
-    # Ciy = prevIntegY + errorY * Ki * Ts
 
-    Cdx = Kd * ((errorX - prevErrorX)/Ts)
-    Cdy = Kd * ((errorY - prevErrorY)/Ts)
+    # Cdx = Kd * ((errorX - prevErrorX) / Ts)
+    # Cdy = Kd * ((errorY - prevErrorY) / Ts)
+    # Cdx = Kd * v_curx
+    # Cdy = Kd * v_cury
+
+
+    Cdx = Kd *(0.2* vec_lastx +0.8 * ((prevX - ballPosX) / Ts))
+    Cdy = Kd *(0.2* vec_lasty +0.8 * ((prevY - ballPosY) / Ts))
+    vec_lastx = (prevX - ballPosX) / Ts
+    vec_lasty = (prevY - ballPosY) / Ts
+    print(Ts)
+    # time.sleep(0.07)
+    print('vec:',((prevX - ballPosX) / Ts),((prevY - ballPosY) / Ts))
 
     Ix = Kp * errorX + Cix + Cdx
     Iy = Kp * errorY + Ciy + Cdy
-    # Ix = round(Ix, 1) - 0.4
-    # Iy = round(Iy, 1) - 0.2
-    # Ix = round(Ix, 1)
-    # Iy = round(Iy, 1)
+    # print('X:', 'P:', Kp * errorX, 'I:', Cix, 'D:', Cdx, 'outputX:', Ix)
+    # print('Y:', 'P:', Kp * errorY, 'I:', Ciy, 'D:', Cdy, 'outputY:', Iy)
 
-    print(Ix, Iy)
-    # if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
-    #     SerialandAngle.Angle2SerPort(-Ix - 0.2, -Iy - 0.1)
-    # else:
-    #     SerialandAngle.Angle2SerPort(Ix - 0.2, Iy - 0.1)
-
-
+    if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
+        # print(' output:',-Ix - 0.2, -Iy - 0.1, '\n')
+        SerialandAngle.Angle2SerPort(-Ix - 0.2, -Iy - 0.1)
+    else:
+        SerialandAngle.Angle2SerPort(Ix - 0.2, Iy - 0.1)
+        # print(' output:',Ix - 0.2, Iy - 0.1, '\n')
 
     prevDerivX = Cdx
     prevDerivY = Cdy
@@ -396,7 +408,9 @@ def PIDcontrol(ballPosX, ballPosY, prevBallPosX, prevBallPosY, refX, refY, vecx,
     prevIntegY = Ciy
     prevErrorX = errorX
     prevErrorY = errorY
-    # print(totalErrorX)
+
+    prevX = ballPosX
+    prevY = ballPosY
 
     return Ix, Iy
 
@@ -417,18 +431,22 @@ def donothing():
 
 
 positionlist = []
-timelist=[]
+timelist = []
 prevX, prevY = 0, 0
 prevRefX, prevRefY = 0, 0
 start_time = 0
 delivery_time11 = 0
+lastx = 0
+lasty = 0
+
+
 def main():
     global H, S, V
     global getPixelColor
     global refX, refY, totalErrorX, totalErrorY
-    global x, y, alpha, beta,Ix, Iy
+    global x, y, alpha, beta, Ix, Iy, lastx, lasty
     global prevX, prevY, prevAlpha, prevBeta, prevRefX, prevRefY
-    global camWidth, camHeight, lostballcount,positionlist,timelist
+    global camWidth, camHeight, lostballcount, positionlist, timelist
     global timeInterval, start_time, delivery_time11
 
     # Ts = time.time() - delivery_time11  # sampling time
@@ -492,30 +510,32 @@ def main():
         M = cv2.moments(c)
         center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
         center_float = (M["m10"] / M["m00"], M["m01"] / M["m00"])
+        # 添加一步滤波，因为当接收到的数据，在1~2个像素点的误差内剧烈抖动时，会对系统的控制输出造成很大的影响。
 
+        a = x
+        d = y
 
         if radius > 10:
             cv2.putText(frame, str(int(x)) + ";" + str(int(y)).format(0, 0), (int(x) - 50, int(y) - 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
             cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
             cv2.circle(frame, center, 5, (0, 0, 255), -1)
-            if useKalmanBool == False:
-                # a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
-                # d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
-                a, b = kalman.updatePisiton(x, Ix)
-                d, e = kalman.updatePisiton(y, Iy)
+            # if useKalmanBool == False:
+            #     a, b, c, d = kalman_new.kalman(np.mat(center_float[0]))
+            #     d, e, f, g = kalman_new.kalman(np.mat(center_float[1]))
+            #     a, b = kalman.updatePisiton(x, Ix)
+            #     d, e = kalman.updatePisiton(y, Iy)
 
-                # timelist.append(time.process_time())
-                # positionlist.append(a)
+            # print(a, x, a - x)
+            # print(b, y, b - y)
 
-
-                PIDcontrol(int(a), int(d), prevX, prevY, refX, refY, b, e)
+            PIDcontrol(int(a), int(d), refX, refY)
         else:
             totalErrorX, totalErrorY = 0, 0
-    # else:
+    else:
         # lostballcount = lostballcount + 1
         # print('lost ball:', lostballcount)
-        # SerialandAngle.Angle2SerPort(-0.1, -0.1)
+        SerialandAngle.Angle2SerPort(-0.2, -0.1)
     # cv2.imshow('frame', frame)
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB
@@ -536,10 +556,10 @@ def main():
     # 查询是否要画圆和椭圆
     # drawWithBall()
     paintGraph()
-    try:
-        prevX, prevY = int(x), int(y)
-    except:
-        pass
+    # try:
+    #     prevX, prevY = int(x), int(y)
+    # except:
+    #     pass
     prevRefX, prevRefY = refX, refY
     prevAlpha = alpha
     prevBeta = beta
@@ -617,10 +637,6 @@ Bkalman.pack()
 *************
 '''
 
-
-
-
-
 FramePIDCoef = tk.LabelFrame(controllerWindow, text="PID coefficients")
 FramePIDCoef.place(x=420, y=20, width=380)
 BShowGraph = tk.Button(FramePIDCoef, text="Plot on Graph", command=showGraphWindow)
@@ -660,9 +676,6 @@ sliderSpeed.set(sliderSpeedDefault)
 sliderSpeed.pack()
 BballDrawCircle = tk.Button(FrameBallControl, text="Enable Circle Trajectory", command=startDrawCircle)
 BballDrawCircle.place(x=70, y=-5)
-BballDrawEight = tk.Button(FrameBallControl, text="Enable Eight Trajectory", command=startDrawEight)
-BballDrawEight.place(x=220, y=-5)
-
 
 showGraphPositionX = tk.IntVar()
 showGraphPositionX.set(1)

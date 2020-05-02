@@ -9,6 +9,9 @@ import time
 import kalman
 import SerialandAngle
 from math import *
+# 支持中文
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
 # 初始化，平衡平板
 SerialandAngle.Angle2SerPort(-0.2, -0.1)
@@ -33,10 +36,10 @@ controllerWindow["bg"] = "lightgrey"  # define the background color of the root 
 controllerWindow.resizable(0, 0)  # define if the root window is resizable or not for Vertical and horizontal，不可以拉伸
 
 # 主控制面板背景图片
-canvas = tk.Canvas(controllerWindow, width=380,height=92,bd=0, highlightthickness=0)
-image_file=tk.PhotoImage(file='C:\\Users\\50578\\working\\Ball-Tracking\\background-school.gif')
-image=canvas.create_image(0,0,anchor='nw',image=image_file)#放置着张图片
-canvas.place(x=410,y=10)
+canvas = tk.Canvas(controllerWindow, width=380, height=92, bd=0, highlightthickness=0)
+image_file = tk.PhotoImage(file='C:\\Users\\50578\\working\\Ball-Tracking\\background-school.gif')
+image = canvas.create_image(0, 0, anchor='nw', image=image_file)  # 放置着张图片
+canvas.place(x=410, y=10)
 
 # 展示了实时画面的控制面板
 videoWindow = tk.Toplevel(controllerWindow)  # a new window derived from the root window "controllerwindow"
@@ -76,7 +79,8 @@ def createPointsListCircle():  # create an array of 360 points to describe a who
         angle = angle - 90
         pointsListCircle.append(
             [sliderRadius.get() * cos(radians(angle)) + 170, sliderRadius.get() * sin(radians(angle)) + 180])
-    print(pointsListCircle)
+    # print(pointsListCircle)
+
 
 drawCircleBool = False  # flag to draw Circle
 
@@ -285,6 +289,12 @@ Ix, Iy = 0, 0
 vec_lastx = 0
 vec_lasty = 0
 
+vecxlist = []
+vecylist = []
+vecxFilterlist = []
+vecyFilterlist = []
+timelist = []
+
 
 def PIDcontrol(ballPosX, ballPosY, refX, refY):
     global totalErrorX, totalErrorY
@@ -292,6 +302,7 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
     global Ts, delivery_time
     global prevDerivX, prevDerivY, prevIntegX, prevIntegY
     global prevErrorX, prevErrorY, Ix, Iy, prevY, prevX, vec_lastx, vec_lasty
+    global vecxlist, vecylist, timelist, vecxFilterlist, vecyFilterlist
 
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
@@ -311,6 +322,13 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
     Cdx = Kd * (0.25 * vec_lastx + 0.75 * ((prevX - ballPosX) / Ts))
     Cdy = Kd * (0.25 * vec_lasty + 0.75 * ((prevY - ballPosY) / Ts))
 
+    # 绘制速度曲线
+    # timelist.append(time.time())
+    # vecxlist.append(((prevX - ballPosX) / Ts))
+    # vecylist.append(((prevY - ballPosY) / Ts))
+    # vecxFilterlist.append((0.25 * vec_lastx + 0.75 * ((prevX - ballPosX) / Ts)))
+    # vecyFilterlist.append((0.25 * vec_lasty + 0.75 * ((prevY - ballPosY) / Ts)))
+
     vec_lastx = (prevX - ballPosX) / Ts
     vec_lasty = (prevY - ballPosY) / Ts
 
@@ -322,11 +340,9 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
     # print('Y:', 'P:', Kp * errorY, 'I:', Ciy, 'D:', Cdy, 'outputY:', Iy)
 
     if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
-        # print(' output:', -Ix - 0.2, -Iy - 0.1, '\n')
         SerialandAngle.Angle2SerPort(-Ix - 0.2, -Iy - 0.1)
     else:
         SerialandAngle.Angle2SerPort(Ix - 0.2, Iy - 0.1)
-        # print(' output:', Ix - 0.2, Iy - 0.1, '\n')
 
     prevDerivX = Cdx
     prevDerivY = Cdy
@@ -340,11 +356,24 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
 
     return Ix, Iy
 
+def drawVecPlot():
+    global vecxlist, vecylist, timelist, vecxFilterlist, vecyFilterlist
+
+    plt.xlabel("时间/秒")  # x轴上的名字
+    plt.ylabel("小球运动x轴速度/像素点")  # y轴上的名字
+
+    plt.plot(timelist, vecxlist,linestyle='--',label='没有滤波的速度曲线')
+    plt.plot(timelist, vecxFilterlist,label='加入滤波算法后的速度曲线')
+
+    plt.legend()
+    plt.show()
 
 # 退出interface
 def endProgam():
+    # drawVecPlot()
     SerialandAngle.ser.close()
     controllerWindow.destroy()
+
 
 # function that does nothing, may be used for delay
 def donothing():

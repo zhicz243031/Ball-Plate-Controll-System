@@ -49,3 +49,4 @@ Reference
 ---------
 1. [Pyimagesearch](https://www.pyimagesearch.com/)
 2. [OpenCV-Python图像处理教程](https://github.com/ex2tron/OpenCV-Python-Tutorial)
+3. [Ball Balancing PID System](https://www.instructables.com/id/Ball-Balancing-PID-System/)

@@ -1,10 +1,12 @@
 Ball Plate Control System
 =============
 > This is my undergraduate graduation design. It is a ball plate control system. 
+>
+> The video about this project is located [here](https://youtu.be/u6pzwO9xneA). 
 
 _____
 
-![](https://github.com/505788057/Graduation_Design/blob/master/Graduation_Document/BachelorPaper/figures/MechanicalStructure.jpg)
+![](https://github.com/505788057/Graduation_Design/blob/master/Graduation_Document/BachelorPaper/figures/MechanicalStructure.jpg){:height="50%" width="50%"}
 
 Description
 ----------
@@ -27,7 +29,7 @@ Prerequisites
 
 Interface
 ---------
-![](https://github.com/505788057/Ball-Tracking/blob/master/MD_img/two.png)
+![](https://github.com/505788057/Ball-Tracking/blob/master/interface.png)
 ### Function introduction
 - HSV Parameter debugging
   

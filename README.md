@@ -6,7 +6,7 @@ Ball Plate Control System
 
 _____
 
-![](https://github.com/505788057/Graduation_Design/blob/master/Graduation_Document/BachelorPaper/figures/MechanicalStructure.jpg){:height="50%" width="50%"}
+![](https://github.com/505788057/Graduation_Design/blob/master/Graduation_Document/BachelorPaper/figures/MechanicalStructure.jpg)
 
 Description
 ----------

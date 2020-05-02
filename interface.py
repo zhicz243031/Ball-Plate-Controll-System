@@ -37,7 +37,7 @@ controllerWindow.resizable(0, 0)  # define if the root window is resizable or no
 
 # 主控制面板背景图片
 canvas = tk.Canvas(controllerWindow, width=380, height=92, bd=0, highlightthickness=0)
-image_file = tk.PhotoImage(file='C:\\Users\\50578\\working\\Ball-Tracking\\background-school.gif')
+image_file = tk.PhotoImage(file='C:\\Users\\50578\\working\\Ball-Tracking\\background-en.gif')
 image = canvas.create_image(0, 0, anchor='nw', image=image_file)  # 放置着张图片
 canvas.place(x=410, y=10)
 

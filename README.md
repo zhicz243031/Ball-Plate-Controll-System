@@ -6,7 +6,7 @@ Ball Plate Control System
 
 _____
 
-![](https://github.com/505788057/Graduation_Design/blob/master/Graduation_Document/BachelorPaper/figures/MechanicalStructure.jpg)
+![](https://github.com/505788057/Ball-Tracking/blob/master/fig/struction.png)
 
 Description
 ----------
@@ -29,7 +29,7 @@ Prerequisites
 
 Interface
 ---------
-![](https://github.com/505788057/Ball-Tracking/blob/master/interface.png)
+![](https://github.com/505788057/Ball-Tracking/blob/master/fig/interface.png)
 ### Function introduction
 - HSV Parameter debugging
   

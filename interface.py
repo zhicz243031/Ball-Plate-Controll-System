@@ -9,15 +9,16 @@ import time
 import kalman
 import SerialandAngle
 from math import *
+
 # 支持中文
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
 # 初始化，平衡平板
-SerialandAngle.Angle2SerPort(-0.2, -0.1)
+SerialandAngle.Angle2SerPort(0.4, -0.4)
 
 # vs = cv2.VideoCapture('BlueBal.avi')
-vs = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+vs = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 vs.set(3, 640)
 vs.set(4, 480)
 print("Open camera succeed.")
@@ -63,7 +64,7 @@ sliderSDefault = 0
 sliderVDefault = 0
 sliderCoefPDefault = 0.028
 sliderCoefIDefault = 0
-sliderCoefDDefault = 0.025
+sliderCoefDDefault = 0.022
 sliderRadiusDefault = 20
 sliderSpeedDefault = 10
 sliderRefXDefault = 190
@@ -154,7 +155,7 @@ def getMouseClickPosition(mousePosition):  # get mouse click position
 
 
 # 用鼠标设定小球的运动位置，为其设定参考点
-refX = 170  # reference refinate X
+refX = 160  # reference refinate X
 refY = 180  # reference refinate Y
 
 
@@ -288,12 +289,14 @@ delivery_time = 0
 Ix, Iy = 0, 0
 vec_lastx = 0
 vec_lasty = 0
-
+ballx = []
+bally = []
 vecxlist = []
 vecylist = []
 vecxFilterlist = []
 vecyFilterlist = []
 timelist = []
+refxdraw = []
 
 
 def PIDcontrol(ballPosX, ballPosY, refX, refY):
@@ -303,6 +306,7 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
     global prevDerivX, prevDerivY, prevIntegX, prevIntegY
     global prevErrorX, prevErrorY, Ix, Iy, prevY, prevX, vec_lastx, vec_lasty
     global vecxlist, vecylist, timelist, vecxFilterlist, vecyFilterlist
+    global ballx, bally, refxdraw
 
     Kp = sliderCoefP.get()
     Ki = sliderCoefI.get()
@@ -323,11 +327,17 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
     Cdy = Kd * (0.25 * vec_lasty + 0.75 * ((prevY - ballPosY) / Ts))
 
     # 绘制速度曲线
-    # timelist.append(time.time())
+    print(time.time())
+    timelist.append(time.time())
     # vecxlist.append(((prevX - ballPosX) / Ts))
     # vecylist.append(((prevY - ballPosY) / Ts))
     # vecxFilterlist.append((0.25 * vec_lastx + 0.75 * ((prevX - ballPosX) / Ts)))
     # vecyFilterlist.append((0.25 * vec_lasty + 0.75 * ((prevY - ballPosY) / Ts)))
+
+    # 绘制小球运动路线轨迹
+    ballx.append(ballPosX)
+    bally.append(ballPosY)
+    refxdraw.append(refX)
 
     vec_lastx = (prevX - ballPosX) / Ts
     vec_lasty = (prevY - ballPosY) / Ts
@@ -336,13 +346,13 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
 
     Ix = Kp * errorX + Cix + Cdx
     Iy = Kp * errorY + Ciy + Cdy
-    # print('X:', 'P:', Kp * errorX, 'I:', Cix, 'D:', Cdx, 'outputX:', Ix)
-    # print('Y:', 'P:', Kp * errorY, 'I:', Ciy, 'D:', Cdy, 'outputY:', Iy)
+    # print('errorX:', errorX,'X:', 'P:', Kp * errorX, 'I:', Cix, 'D:', Cdx, 'outputX:', Ix)
+    # print('errorY:', errorY,'Y:', 'P:', Kp * errorY, 'I:', Ciy, 'D:', Cdy, 'outputY:', Iy,'\n')
 
     if (Ix < 0 and Iy < 0) or (Ix > 0 and Iy > 0):
-        SerialandAngle.Angle2SerPort(-Ix - 0.2, -Iy - 0.1)
+        SerialandAngle.Angle2SerPort(-Ix + 0.4, -Iy - 0.4)
     else:
-        SerialandAngle.Angle2SerPort(Ix - 0.2, Iy - 0.1)
+        SerialandAngle.Angle2SerPort(Ix + 0.4, Iy - 0.4)
 
     prevDerivX = Cdx
     prevDerivY = Cdy
@@ -356,21 +366,28 @@ def PIDcontrol(ballPosX, ballPosY, refX, refY):
 
     return Ix, Iy
 
+
 def drawVecPlot():
     global vecxlist, vecylist, timelist, vecxFilterlist, vecyFilterlist
+    global ballx, bally, refxdraw
 
-    plt.xlabel("时间/秒")  # x轴上的名字
-    plt.ylabel("小球运动x轴速度/像素点")  # y轴上的名字
+    plt.xlabel("x/像素点")  # x轴上的名字
+    plt.ylabel("y/像素点")  # y轴上的名字
 
-    plt.plot(timelist, vecxlist,linestyle='--',label='没有滤波的速度曲线')
-    plt.plot(timelist, vecxFilterlist,label='加入滤波算法后的速度曲线')
+    # plt.plot(timelist, vecxlist,linestyle='--',label='没有滤波的速度曲线')
+    # plt.plot(timelist, vecxFilterlist,label='加入滤波算法后的速度曲线')
+
+    plt.plot(ballx, bally,label='小球运动轨迹')
+
+    # plt.plot(timelist, ballx, linestyle='--', label='随时间变化x轴运动轨迹')
+    # plt.plot(timelist, refxdraw, label='参考轨迹曲线')
 
     plt.legend()
     plt.show()
 
 # 退出interface
 def endProgam():
-    # drawVecPlot()
+    drawVecPlot()
     SerialandAngle.ser.close()
     controllerWindow.destroy()
 
@@ -407,8 +424,8 @@ def main():
         H = pixelColorOnClick[0, 0, 0]
         S = pixelColorOnClick[0, 0, 1]
         V = pixelColorOnClick[0, 0, 2]
-        # print(mouseX, mouseY)
-        print(H, S, V)
+        print(mouseX, mouseY)
+        # print(H, S, V)
         getPixelColor = False
 
     # 银质绿面小球
@@ -455,11 +472,11 @@ def main():
             #     a, b = kalman.updatePisiton(x, Ix)
             #     d, e = kalman.updatePisiton(y, Iy)
 
-            PIDcontrol(int(a), int(d), refX, refY)
+            # PIDcontrol(int(a), int(d), refX, refY)
         else:
             totalErrorX, totalErrorY = 0, 0
     else:
-        SerialandAngle.Angle2SerPort(-0.2, -0.1)
+        SerialandAngle.Angle2SerPort(0.4, -0.4)
 
     if showVideoWindow == True:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # 转换颜色从BGR到RGB

@@ -4,7 +4,7 @@ from struct import pack,unpack
 
 # open the serial port COM4
 # ser = serial.Serial(port="/dev/ttyUSB0", baudrate=115200)
-ser = serial.Serial(port="COM3", baudrate=115200)
+ser = serial.Serial(port="COM4", baudrate=115200)
 
 # Test the serial port
 def DetectSerPort():
@@ -42,14 +42,12 @@ def Angle2SerPort(alpha,beta):
     Sendmessagelong = ser.write(CommondStr)
 
 
-# (-0.2,-0.1)是一个理想的平衡点
+# (5,-0.1)是一个理想的平衡点
 # while(1):
-#     Angle2SerPort(-0.3, -0.1)
-#     time.sleep(0.4)
-#     Angle2SerPort(-0.1, -0.1)
-#     time.sleep(0.4)
-#
-Angle2SerPort(-0.2,-0.1)
-# Angle2SerPort(0.2,0.1)
-# DetectSerPort()
-# ser.close()
+#     Angle2SerPort(4, -4)
+#     time.sleep(0.5)
+#     Angle2SerPort(-4, 4)
+#     time.sleep(0.5)
+if __name__ == '__main__':
+    Angle2SerPort(0.4 ,-0.4)
+# Angle2SerPort(2,5)

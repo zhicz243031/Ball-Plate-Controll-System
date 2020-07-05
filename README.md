@@ -43,7 +43,9 @@ Interface
 
 - System control interface
 
+## Mechanical structure
 
+![](https://github.com/505788057/Ball-Plate-Controll-System/blob/master/entity.jpg)
 
 Reference
 ---------

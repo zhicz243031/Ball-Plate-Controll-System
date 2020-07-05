@@ -45,7 +45,9 @@ Interface
 
 ## Mechanical structure
 
-![](https://github.com/505788057/Ball-Plate-Controll-System/blob/master/entity.jpg)
+![The Whole Frame](https://github.com/505788057/Ball-Plate-Controll-System/blob/master/fig/entity.jpg)
+
+![Part of the Structure](https://github.com/505788057/Ball-Plate-Controll-System/blob/master/fig/part.jpg)
 
 Reference
 ---------
